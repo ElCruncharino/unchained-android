@@ -8,9 +8,11 @@ plugins {
     id("dagger.hilt.android.plugin")
     id("androidx.navigation.safeargs.kotlin")
     id("com.mikepenz.aboutlibraries.plugin")
+    id("com.google.devtools.ksp")
     alias(libs.plugins.protobuf)
     alias(libs.plugins.ktfmt)
     kotlin("kapt")
+    id("androidx.room")
 }
 
 fun readProperties(propertiesFile: File) = Properties().apply {
@@ -61,7 +63,7 @@ android {
         minSdk = 22
         targetSdk = 35
         versionCode = 49
-        versionName = "1.3.5"
+        versionName = "1.3.7"
 
         javaCompileOptions {
             annotationProcessorOptions {
@@ -167,10 +169,16 @@ android {
         jvmTarget = "17"
     }
     buildFeatures {
+        //noinspection DataBindingWithoutKapt
         dataBinding = true
         buildConfig = true
     }
 
+    room {
+        schemaDirectory("$projectDir/schemas")
+    }
+
+    @Suppress("UnstableApiUsage")
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -208,7 +216,7 @@ dependencies {
     // implementation(libs.stax)
     implementation(libs.jakarta.xmlapi)
 
-    kapt(libs.moshi.kapt)
+    ksp(libs.moshi.kapt)
     implementation(libs.moshi.runtime)
 
     implementation(libs.retrofit.runtime)
@@ -223,7 +231,7 @@ dependencies {
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
 
-    kapt(libs.room.compiler)
+    ksp(libs.room.compiler)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
 
@@ -240,7 +248,7 @@ dependencies {
 
     implementation(libs.coil)
 
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation)
     implementation(libs.hilt.android)
 
@@ -270,4 +278,7 @@ dependencies {
     testImplementation(libs.test.core)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+
+    implementation(libs.room.runtime)
+    ksp(libs.androidx.room.compiler)
 }

@@ -26,7 +26,7 @@ class ManageRepositoryDialogFragment : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return activity?.let { activity ->
-            val repository =
+            @Suppress("DEPRECATION") val repository =
                 arguments?.getParcelable<RepositoryListItem.Repository>(REPOSITORY_KEY)
                     ?: throw IllegalArgumentException("Repository cannot be null")
 
@@ -43,31 +43,35 @@ class ManageRepositoryDialogFragment : DialogFragment() {
             view.findViewById<TextView>(R.id.tvAuthor).text = repository.author
             view.findViewById<TextView>(R.id.tvDescription).text = repository.description
 
-            if (repository.link == MANUAL_PLUGINS_REPOSITORY_NAME) {
-                view.findViewById<Button>(R.id.bInstallAll).isEnabled = false
-                view.findViewById<Button>(R.id.bUpdateAll).isEnabled = false
-                view.findViewById<Button>(R.id.bUninstallRepo).isEnabled = false
-            } else if (repository.link == DEFAULT_PLUGINS_REPOSITORY_LINK) {
-                view.findViewById<Button>(R.id.bInstallAll).setOnClickListener {
-                    progressBar.isIndeterminate = true
-                    viewModel.installAllRepositoryPlugins(activity, repository)
+            when (repository.link) {
+                MANUAL_PLUGINS_REPOSITORY_NAME -> {
+                    view.findViewById<Button>(R.id.bInstallAll).isEnabled = false
+                    view.findViewById<Button>(R.id.bUpdateAll).isEnabled = false
+                    view.findViewById<Button>(R.id.bUninstallRepo).isEnabled = false
                 }
-                view.findViewById<Button>(R.id.bUpdateAll).setOnClickListener {
-                    progressBar.isIndeterminate = true
-                    viewModel.updateAllRepositoryPlugins(activity, repository)
+                DEFAULT_PLUGINS_REPOSITORY_LINK -> {
+                    view.findViewById<Button>(R.id.bInstallAll).setOnClickListener {
+                        progressBar.isIndeterminate = true
+                        viewModel.installAllRepositoryPlugins(activity, repository)
+                    }
+                    view.findViewById<Button>(R.id.bUpdateAll).setOnClickListener {
+                        progressBar.isIndeterminate = true
+                        viewModel.updateAllRepositoryPlugins(activity, repository)
+                    }
+                    view.findViewById<Button>(R.id.bUninstallRepo).isEnabled = false
                 }
-                view.findViewById<Button>(R.id.bUninstallRepo).isEnabled = false
-            } else {
-                view.findViewById<Button>(R.id.bInstallAll).setOnClickListener {
-                    progressBar.isIndeterminate = true
-                    viewModel.installAllRepositoryPlugins(activity, repository)
-                }
-                view.findViewById<Button>(R.id.bUpdateAll).setOnClickListener {
-                    progressBar.isIndeterminate = true
-                    viewModel.updateAllRepositoryPlugins(activity, repository)
-                }
-                view.findViewById<Button>(R.id.bUninstallRepo).setOnClickListener {
-                    viewModel.uninstallRepository(activity, repository)
+                else -> {
+                    view.findViewById<Button>(R.id.bInstallAll).setOnClickListener {
+                        progressBar.isIndeterminate = true
+                        viewModel.installAllRepositoryPlugins(activity, repository)
+                    }
+                    view.findViewById<Button>(R.id.bUpdateAll).setOnClickListener {
+                        progressBar.isIndeterminate = true
+                        viewModel.updateAllRepositoryPlugins(activity, repository)
+                    }
+                    view.findViewById<Button>(R.id.bUninstallRepo).setOnClickListener {
+                        viewModel.uninstallRepository(activity, repository)
+                    }
                 }
             }
 

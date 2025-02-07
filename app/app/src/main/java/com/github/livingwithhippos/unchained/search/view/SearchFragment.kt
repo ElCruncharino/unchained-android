@@ -1,5 +1,6 @@
 package com.github.livingwithhippos.unchained.search.view
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -25,7 +26,6 @@ import com.github.livingwithhippos.unchained.plugins.model.ScrapedItem
 import com.github.livingwithhippos.unchained.search.model.SearchItemAdapter
 import com.github.livingwithhippos.unchained.search.model.SearchItemListener
 import com.github.livingwithhippos.unchained.search.viewmodel.SearchViewModel
-import com.github.livingwithhippos.unchained.utilities.MAGNET_PATTERN
 import com.github.livingwithhippos.unchained.utilities.extension.delayedScrolling
 import com.github.livingwithhippos.unchained.utilities.extension.getThemedDrawable
 import com.github.livingwithhippos.unchained.utilities.extension.hideKeyboard
@@ -33,15 +33,13 @@ import com.github.livingwithhippos.unchained.utilities.extension.showToast
 import com.google.android.material.button.MaterialButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import kotlinx.datetime.toInstant
+import kotlinx.datetime.Instant
 import timber.log.Timber
 
 @AndroidEntryPoint
 class SearchFragment : UnchainedFragment(), SearchItemListener {
 
     private val viewModel: SearchViewModel by viewModels()
-
-    private val magnetPattern = Regex(MAGNET_PATTERN, RegexOption.IGNORE_CASE)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -200,6 +198,7 @@ class SearchFragment : UnchainedFragment(), SearchItemListener {
         popup.show()
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun performSearch(binding: FragmentSearchBinding, searchAdapter: SearchItemAdapter) {
         binding.tfSearch.hideKeyboard()
         viewModel
@@ -305,7 +304,7 @@ class SearchFragment : UnchainedFragment(), SearchItemListener {
                     items.sortedByDescending { item ->
                         if (item.addedDate != null) {
                             try {
-                                item.addedDate.toInstant().toEpochMilliseconds()
+                                Instant.parse(item.addedDate).toEpochMilliseconds()
                             } catch (e: Exception) {
                                 null
                             }
