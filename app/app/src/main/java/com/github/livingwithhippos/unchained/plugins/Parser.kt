@@ -241,7 +241,7 @@ class Parser(
         regexes.nameRegex.regexps.forEach {
             val parsedName = cleanName(parseSingle(it, source, baseUrl) ?: "")
             // this is a single string, no need to check for regexUse
-            if (!parsedName.isNullOrBlank()) {
+            if (parsedName.isNotBlank()) {
                 name = parsedName
                 return@forEach
             }
@@ -702,14 +702,15 @@ class Parser(
         val containerClass: Element? =
             if (parser.className != null) doc.getElementsByClass(parser.className).firstOrNull()
             else if (parser.idName != null) doc.getElementById(parser.idName) else null
-        val entries: Elements = Elements()
+        val entries = Elements()
         if (containerClass != null) {
             if (parser.entryClass != null)
                 entries.addAll(containerClass.getElementsByClass(parser.entryClass))
-            else entries.addAll(containerClass.getElementsByTag(parser.entryTag))
+            else parser.entryTag?.let { containerClass.getElementsByTag(it) }
+                ?.let { entries.addAll(it) }
         } else {
             if (parser.entryClass != null) entries.addAll(doc.getElementsByClass(parser.entryClass))
-            else entries.addAll(doc.getElementsByTag(parser.entryTag))
+            else parser.entryTag?.let { doc.getElementsByTag(it) }?.let { entries.addAll(it) }
         }
 
         for (entry in entries) {
