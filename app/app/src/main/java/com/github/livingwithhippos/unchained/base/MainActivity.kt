@@ -72,6 +72,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /** A [AppCompatActivity] subclass. Shared between all the fragments except for the preferences. */
+@Suppress("DEPRECATION")
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
@@ -906,12 +907,24 @@ class MainActivity : AppCompatActivity() {
                         this.showToast(R.string.press_again_exit)
                     }
                 } else {
-                    super.onBackPressed()
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        // Use OnBackPressedDispatcher for Android 13+
+                        onBackPressedDispatcher.onBackPressed()
+                    } else {
+                        // Use the deprecated super.onBackPressed() for older versions
+                        super.onBackPressed()
+                    }
                 }
             }
 
             else -> {
-                super.onBackPressed()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    // Use OnBackPressedDispatcher for Android 13+
+                    onBackPressedDispatcher.onBackPressed()
+                } else {
+                    // Use the deprecated super.onBackPressed() for older versions
+                    super.onBackPressed()
+                }
             }
         }
     }
