@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.protobuf) apply false
     id("com.mikepenz.aboutlibraries.plugin") version "11.2.3"
-    id("com.github.ben-manes.versions") version "0.51.0"
+    id("com.github.ben-manes.versions") version "0.52.0"
     id("com.google.devtools.ksp") version "2.0.21-1.0.27" apply false
     id("androidx.room") version "2.6.1" apply false
 }
