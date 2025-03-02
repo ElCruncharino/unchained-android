@@ -395,8 +395,15 @@ fun View.hideKeyboard() {
  */
 fun getAvailableSpace(view: View): List<Int> {
     val screenRect = Rect()
-    val windowManager = view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    windowManager.defaultDisplay.getRectSize(screenRect)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val windowManager = view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        windowManager.currentWindowMetrics.bounds.also { screenRect.set(it) }
+    }
+    else {
+        val windowManager = view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        @Suppress("DEPRECATION")
+        windowManager.defaultDisplay.getRectSize(/* outSize = */ screenRect)
+    }
 
     val parentViewRect = Rect()
     val locationOnScreen = IntArray(2)

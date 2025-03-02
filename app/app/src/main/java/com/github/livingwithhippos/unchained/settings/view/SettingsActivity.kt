@@ -1,5 +1,6 @@
 package com.github.livingwithhippos.unchained.settings.view
 
+import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.fragment.NavHostFragment
@@ -31,7 +32,14 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        onBackPressed()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Use OnBackPressedDispatcher for Android 13+
+            onBackPressedDispatcher.onBackPressed()
+        } else {
+            // Use the deprecated super.onBackPressed() for older versions
+            @Suppress("DEPRECATION")
+            super.onBackPressed()
+        }
         return true
     }
 }

@@ -184,8 +184,11 @@ class DataBindingDetailsLookup<T>(private val recyclerView: RecyclerView) : Item
     override fun getItemDetails(event: MotionEvent): ItemDetails<T>? {
         val view = recyclerView.findChildViewUnder(event.x, event.y)
         if (view != null) {
-            return (recyclerView.getChildViewHolder(view) as DataBindingTrackedViewHolder<T, *>)
-                .getItemDetails()
+            val viewHolder = recyclerView.getChildViewHolder(view)
+            if (viewHolder is DataBindingTrackedViewHolder<*, *>) {
+                @Suppress("UNCHECKED_CAST")
+                return (viewHolder as DataBindingTrackedViewHolder<T, *>).getItemDetails()
+            }
         }
         return null
     }
