@@ -24,14 +24,27 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import timber.log.Timber
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class Parser(
     private val preferences: SharedPreferences,
-    private val classicClient: OkHttpClient,
-    private val dohClient: OkHttpClient,
 ) {
 
     private fun getClient(): OkHttpClient {
+        val timeout = 60L // 60 seconds timeout
+
+        val dohClient = OkHttpClient.Builder()
+            .connectTimeout(timeout, TimeUnit.SECONDS)
+            .readTimeout(timeout, TimeUnit.SECONDS)
+            .writeTimeout(timeout, TimeUnit.SECONDS)
+            .build()
+
+        val classicClient = OkHttpClient.Builder()
+            .connectTimeout(timeout, TimeUnit.SECONDS)
+            .readTimeout(timeout, TimeUnit.SECONDS)
+            .writeTimeout(timeout, TimeUnit.SECONDS)
+            .build()
 
         return if (preferences.getBoolean(KEY_USE_DOH, false)) dohClient else classicClient
     }
@@ -321,6 +334,7 @@ class Parser(
         }
 
         val parsedSize: Double? = parseCommonSize(size)
+        size = formatSize(size)
 
         return ScrapedItem(
             name = name,
@@ -460,6 +474,7 @@ class Parser(
                 }
 
                 val parsedSize: Double? = parseCommonSize(size)
+                size = formatSize(size)
 
                 if (name != null && (magnets.isNotEmpty() || torrents.isNotEmpty()))
                     tableItems.add(
@@ -730,9 +745,11 @@ class Parser(
 
                 val seeders = parseSingle(regexes.seedersRegex, html, url)
                 val leechers = parseSingle(regexes.leechersRegex, html, url)
-                val size = parseSingle(regexes.sizeRegex, html, url)
+                var size = parseSingle(regexes.sizeRegex, html, url)
                 val details = parseSingle(regexes.detailsRegex, html, url)
                 val addedDate = parseSingle(regexes.dateAddedRegex, html, url)
+
+                size = formatSize(size)
 
                 directItems.add(
                     ScrapedItem(
@@ -753,6 +770,48 @@ class Parser(
 
         return directItems
     }
+
+    private fun formatSize(sizeBytesStr: String?): String? {
+        if (sizeBytesStr.isNullOrBlank()) return null
+
+        val kbPattern = "\\s*(\\d+\\.?\\d*)\\s*[kK]".toRegex()
+        val mbPattern = "\\s*(\\d+\\.?\\d*)\\s*[mM]".toRegex()
+        val gbPattern = "\\s*(\\d+\\.?\\d*)\\s*[gG]".toRegex()
+        val tbPattern = "\\s*(\\d+\\.?\\d*)\\s*[tT]".toRegex()
+        val genericPattern = "\\d+\\.?\\d*".toRegex()
+
+        return try {
+            var match = kbPattern.find(sizeBytesStr)?.groupValues?.get(1)
+            if (match != null) return sizeBytesStr
+            match = mbPattern.find(sizeBytesStr)?.groupValues?.get(1)
+            if (match != null) return sizeBytesStr
+            match = gbPattern.find(sizeBytesStr)?.groupValues?.get(1)
+            if (match != null) return sizeBytesStr
+            match = tbPattern.find(sizeBytesStr)?.groupValues?.get(1)
+            if (match != null) return sizeBytesStr
+
+            match = genericPattern.find(sizeBytesStr)?.value
+            if (match != null) {
+                val sizeBytes = match.toDouble()
+                val KB = 1024.0
+                val MB = KB * 1024
+                val GB = MB * 1024
+                val TB = GB * 1024
+
+                return when {
+                    sizeBytes < KB -> String.format(Locale.US, "%.2f B", sizeBytes)
+                    sizeBytes < MB -> String.format(Locale.US, "%.2f KB", sizeBytes / KB)
+                    sizeBytes < GB -> String.format(Locale.US, "%.2f MB", sizeBytes / MB)
+                    sizeBytes < TB -> String.format(Locale.US, "%.2f GB", sizeBytes / GB)
+                    else -> String.format(Locale.US, "%.2f TB", sizeBytes / TB)
+                }
+            }
+            null
+        } catch (e: NumberFormatException) {
+            null
+        }
+    }
+
 
     private fun getCategory(plugin: Plugin, category: String): String? {
         return when (category) {

@@ -302,5 +302,5 @@ object ApiFactory {
         preferences: SharedPreferences,
         @ClassicClient classicClient: OkHttpClient,
         @DOHClient dohClient: OkHttpClient,
-    ): Parser = Parser(preferences, classicClient, dohClient)
+    ): Parser = Parser(preferences)
 }
