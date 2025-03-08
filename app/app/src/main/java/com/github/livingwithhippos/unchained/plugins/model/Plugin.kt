@@ -13,6 +13,7 @@ data class Plugin(
     @Json(name = "engine_version") val engineVersion: Float,
     @Json(name = "version") val version: Float,
     @Json(name = "url") val url: String,
+    @Json(name = "api_key") val apiKey: String? = null, // Add optional api_key
     @Json(name = "name") val name: String,
     @Json(name = "description") val description: String?,
     @Json(name = "author") val author: String?,
