@@ -281,4 +281,6 @@ dependencies {
 
     implementation(libs.room.runtime)
     ksp(libs.androidx.room.compiler)
+
+    implementation(libs.gson)
 }

@@ -1,6 +1,8 @@
 package com.github.livingwithhippos.unchained.repository.viewmodel
 
+import android.app.AlertDialog
 import android.content.Context
+import android.widget.EditText
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -18,18 +20,25 @@ import com.github.livingwithhippos.unchained.repository.model.RepositoryListItem
 import com.github.livingwithhippos.unchained.utilities.DEFAULT_PLUGINS_REPOSITORY_LINK
 import com.github.livingwithhippos.unchained.utilities.EitherResult
 import com.github.livingwithhippos.unchained.utilities.Event
+import com.github.livingwithhippos.unchained.utilities.MANUAL_PLUGINS_REPOSITORY_NAME
 import com.github.livingwithhippos.unchained.utilities.extension.isWebUrl
 import com.github.livingwithhippos.unchained.utilities.getRepositoryString
 import com.github.livingwithhippos.unchained.utilities.postEvent
-import com.squareup.moshi.JsonAdapter
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import com.squareup.moshi.JsonEncodingException
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import org.json.JSONException
 import timber.log.Timber
+import java.io.File
+import javax.inject.Inject
+import kotlin.coroutines.resume
 
 @HiltViewModel
 class RepositoryViewModel
@@ -42,7 +51,7 @@ constructor(
     val pluginsRepositoryLiveData = MutableLiveData<Event<PluginRepositoryEvent>>()
 
     // todo: inject
-    private val jsonAdapter: JsonAdapter<JsonPluginRepository> =
+    private val jsonAdapter =
         Moshi.Builder().build().adapter(JsonPluginRepository::class.java)
 
     fun checkCurrentRepositories() {
@@ -100,6 +109,7 @@ constructor(
      * @param repositoryURL: the link to the repository or null if it was downloaded directly
      * @param context
      */
+
     fun downloadPlugin(link: String, repositoryURL: String?, context: Context) {
         viewModelScope.launch {
             when (val result = downloadRepository.downloadPlugin(link)) {
@@ -107,13 +117,125 @@ constructor(
                     Timber.e("Error downloading plugin at $link:\n${result.failure}")
                 }
                 is EitherResult.Success -> {
-                    val install =
-                        diskPluginsRepository.savePlugin(context, result.success, repositoryURL)
+                    val install = diskPluginsRepository.savePlugin(context, result.success, repositoryURL)
                     pluginsRepositoryLiveData.postEvent(PluginRepositoryEvent.Installation(install))
+
+                    if (install is InstallResult.Installed) {
+                        val pluginFile = getPluginFile(result.success, repositoryURL, context)
+                        configurePluginInternal(context, pluginFile)
+                    }
                 }
             }
         }
     }
+
+    private fun getPluginFile(plugin: Plugin, repositoryURL: String?, appContext: Context): File {
+        val repoName = getRepositoryString(repositoryURL ?: MANUAL_PLUGINS_REPOSITORY_NAME)
+
+        val filename =
+            if (repositoryURL != null) {
+                "${plugin.name}.unchained"
+            } else {
+                "${plugin.author}_${plugin.name}.unchained"
+            }
+
+        val pluginFolder = appContext.getDir("plugins", Context.MODE_PRIVATE)
+        val repoFolder = File(pluginFolder, repoName)
+
+        return File(repoFolder, filename)
+    }
+
+    private suspend fun configurePluginInternal(context: Context, pluginFile: File): Boolean =
+        withContext(Dispatchers.IO) {
+            val gson = Gson()
+            try {
+                val jsonString = pluginFile.readText()
+                val jsonObject = gson.fromJson(jsonString, JsonObject::class.java)
+
+                val apiKey = jsonObject.get("api_key")?.asString
+                val url = jsonObject.get("url")?.asString
+
+                var apiKeyChanged = false
+                var urlChanged = false
+
+                if (apiKey == "API_KEY_HERE") {
+                    val userApiKey = getUserApiKeyFromUI(context) ?: return@withContext false
+                    jsonObject.addProperty("api_key", userApiKey)
+                    apiKeyChanged = true
+                }
+
+                if (url == "URL_HERE") {
+                    val userUrl = getUserUrlFromUI(context) ?: return@withContext false
+                    jsonObject.addProperty("url", userUrl)
+                    urlChanged = true
+                }
+
+                if (apiKeyChanged || urlChanged) {
+                    val searchObj = jsonObject.getAsJsonObject("search")
+                    updateSearchUrlsInternal(searchObj, jsonObject.get("url").asString, jsonObject.get("api_key").asString)
+                }
+
+                pluginFile.writeText(gson.toJson(jsonObject))
+                return@withContext true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return@withContext false
+            }
+        }
+
+    private fun updateSearchUrlsInternal(searchObj: JsonObject, url: String, apiKey: String) {
+        if (searchObj.has("category")) {
+            val categoryUrl = searchObj.get("category").asString
+            val updatedCategoryUrl = categoryUrl.replace("\${url}", url).replace("\${api_key}", apiKey)
+            searchObj.addProperty("category", updatedCategoryUrl)
+        }
+        if (searchObj.has("no_category")) {
+            val noCategoryUrl = searchObj.get("no_category").asString
+            val updatedNoCategoryUrl = noCategoryUrl.replace("\${url}", url).replace("\${api_key}", apiKey)
+            searchObj.addProperty("no_category", updatedNoCategoryUrl)
+        }
+    }
+
+    private suspend fun getUserApiKeyFromUI(context: Context): String? =
+        withContext(Dispatchers.Main) { // Switch to the main thread
+            suspendCancellableCoroutine { continuation ->
+                val input = EditText(context)
+                AlertDialog.Builder(context)
+                    .setTitle("Enter API Key")
+                    .setView(input)
+                    .setPositiveButton("OK") { _, _ ->
+                        continuation.resume(input.text.toString())
+                    }
+                    .setNegativeButton("Cancel") { _, _ ->
+                        continuation.resume(null)
+                    }
+                    .setOnCancelListener {
+                        continuation.resume(null)
+                    }
+                    .show()
+            }
+        }
+
+    private suspend fun getUserUrlFromUI(context: Context): String? =
+        withContext(Dispatchers.Main) { // Switch to the main thread
+            suspendCancellableCoroutine { continuation ->
+                val input = EditText(context)
+                AlertDialog.Builder(context)
+                    .setTitle("Enter URL")
+                    .setView(input)
+                    .setPositiveButton("OK") { _, _ ->
+                        continuation.resume(input.text.toString())
+                    }
+                    .setNegativeButton("Cancel") { _, _ ->
+                        continuation.resume(null)
+                    }
+                    .setOnCancelListener {
+                        continuation.resume(null)
+                    }
+                    .show()
+            }
+        }
+
 
     private suspend fun fetchInstalledPlugins(context: Context) =
         diskPluginsRepository.getPluginsWithFolders(context)
