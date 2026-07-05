@@ -774,4 +774,5 @@
     <string name="torbox_api_key">TorBox API key</string>
     <string name="torbox_api_key_summary">Paste your TorBox API key to also use a TorBox account. Leave empty to remove it.</string>
     <string name="add_torrents_service">Add new torrents to</string>
+    <string name="torbox_download_queued">Download queued on TorBox. It will appear in the downloads list once fetched.</string>
 </resources>
