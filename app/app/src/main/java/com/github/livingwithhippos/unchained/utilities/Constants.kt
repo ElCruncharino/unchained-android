@@ -29,6 +29,12 @@ const val PROVIDER_TORBOX = "torbox"
 /** the torbox api key is stored on its own so both services can be logged in at the same time */
 const val KEY_TORBOX_API_KEY = "torbox_api_key"
 
+/** torbox account settings page, where the api key is managed */
+const val TORBOX_ACCOUNT_LINK = "https://torbox.app/settings"
+
+/** torbox plan management page */
+const val TORBOX_SUBSCRIPTION_LINK = "https://torbox.app/subscription"
+
 /**
  * where new torrents go when both services are active, values are [PROVIDER_REAL_DEBRID] (default)
  * and [PROVIDER_TORBOX]
