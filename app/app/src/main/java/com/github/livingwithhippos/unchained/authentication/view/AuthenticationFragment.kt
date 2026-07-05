@@ -95,6 +95,28 @@ class AuthenticationFragment : UnchainedFragment() {
 
         binding.bInsertPrivate.setOnClickListener { onSaveCodeClick(binding.tiPrivateCode) }
 
+        binding.bPasteTorBoxKey.setOnClickListener {
+            val pasteText = getClipboardText()
+            binding.tiTorBoxKey.setText(pasteText, TextView.BufferType.EDITABLE)
+            binding.tiTorBoxKey.hideKeyboard()
+        }
+
+        binding.tiTorBoxKey.setOnFocusChangeListener { v, hasFocus ->
+            if (!hasFocus) {
+                v.hideKeyboard()
+            }
+        }
+
+        binding.bInsertTorBox.setOnClickListener {
+            val key: String = binding.tiTorBoxKey.text.toString().trim()
+            // torbox api keys are 36 characters uuids
+            if (key.matches(TORBOX_API_KEY_PATTERN.toRegex())) {
+                activityViewModel.saveTorBoxApiKey(key)
+            } else {
+                context?.showToast(R.string.invalid_token)
+            }
+        }
+
         activityViewModel.fsmAuthenticationState.observe(viewLifecycleOwner) {
             if (it != null) {
                 when (it.peekContent()) {

@@ -771,6 +771,8 @@
     <string name="disabled">Disabled</string>
     <string name="prowlarr" translatable="false">Prowlarr</string>
     <string name="debrid_services">Debrid services</string>
+    <string name="torbox" translatable="false">TorBox</string>
+    <string name="add_torbox_key_message">You can also log in with a TorBox account: copy your API key from the settings page at https://torbox.app/settings and paste it here.</string>
     <string name="torbox_api_key">TorBox API key</string>
     <string name="torbox_api_key_summary">Paste your TorBox API key to also use a TorBox account. Leave empty to remove it.</string>
     <string name="add_torrents_service">Add new torrents to</string>
