@@ -21,6 +21,16 @@ const val RD_STREAMING_URL = "https://real-debrid.com/streaming-"
 
 const val PRIVATE_TOKEN: String = "private_token"
 
+// torbox proof of concept stuff
+const val TORBOX_BASE_URL = "https://api.torbox.app/v1/api/"
+const val KEY_CURRENT_DEBRID_PROVIDER = "current_debrid_provider"
+const val PROVIDER_REAL_DEBRID = "real_debrid"
+const val PROVIDER_TORBOX = "torbox"
+
+// torbox api keys are uuids while real debrid private tokens are not
+const val TORBOX_API_KEY_PATTERN =
+    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+
 const val REMOTE_TRAFFIC_ON: Int = 1
 
 const val HASH_PATTERN: String = "[a-zA-Z0-9]{32,}"

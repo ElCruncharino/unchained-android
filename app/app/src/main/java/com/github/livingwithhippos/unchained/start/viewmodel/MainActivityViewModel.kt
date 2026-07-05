@@ -53,9 +53,13 @@ import com.github.livingwithhippos.unchained.statemachine.authentication.FSMAuth
 import com.github.livingwithhippos.unchained.statemachine.authentication.FSMAuthenticationState
 import com.github.livingwithhippos.unchained.utilities.EitherResult
 import com.github.livingwithhippos.unchained.utilities.Event
+import com.github.livingwithhippos.unchained.utilities.KEY_CURRENT_DEBRID_PROVIDER
 import com.github.livingwithhippos.unchained.utilities.MAGNET_PATTERN
 import com.github.livingwithhippos.unchained.utilities.PRIVATE_TOKEN
+import com.github.livingwithhippos.unchained.utilities.PROVIDER_REAL_DEBRID
+import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
 import com.github.livingwithhippos.unchained.utilities.PreferenceKeys
+import com.github.livingwithhippos.unchained.utilities.TORBOX_API_KEY_PATTERN
 import com.github.livingwithhippos.unchained.utilities.SIGNATURE
 import com.github.livingwithhippos.unchained.utilities.download.DownloadWorker
 import com.github.livingwithhippos.unchained.utilities.extension.isMagnet
@@ -781,6 +785,18 @@ constructor(
                 refreshToken,
             )
         }
+    }
+
+    /**
+     * detects the debrid service from a pasted private token: torbox api keys are uuids while real
+     * debrid tokens are not. The provider flag is used to route the api calls
+     */
+    fun updateDebridProvider(token: String) {
+        val provider =
+            if (token.matches(TORBOX_API_KEY_PATTERN.toRegex())) PROVIDER_TORBOX
+            else PROVIDER_REAL_DEBRID
+        Timber.d("Setting debrid provider to $provider")
+        preferences.edit { putString(KEY_CURRENT_DEBRID_PROVIDER, provider) }
     }
 
     fun updateCredentialsDeviceCode(deviceCode: String) {
