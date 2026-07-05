@@ -777,4 +777,15 @@
     <string name="torbox_api_key_summary">Paste your TorBox API key to also use a TorBox account. Leave empty to remove it.</string>
     <string name="add_torrents_service">Add new torrents to</string>
     <string name="torbox_download_queued">Download queued on TorBox. It will appear in the downloads list once fetched.</string>
+    <string name="real_debrid" translatable="false">Real-Debrid</string>
+    <string name="subscription">Subscription</string>
+    <string name="torbox_plan_format">Plan: %1$s</string>
+    <string name="torbox_plan_free">Free</string>
+    <string name="torbox_plan_essential" translatable="false">Essential</string>
+    <string name="torbox_plan_pro" translatable="false">Pro</string>
+    <string name="torbox_plan_standard" translatable="false">Standard</string>
+    <string name="torbox_total_downloaded_format">Total downloaded: %1$s</string>
+    <string name="real_debrid_not_connected">Not connected. Log out and use the login screen to add a Real-Debrid account.</string>
+    <string name="torbox_not_connected">Not connected. Add your TorBox API key from the app settings or the login screen.</string>
+    <string name="torbox_account_error">Could not load the TorBox account details. Check the API key or try again later.</string>
 </resources>

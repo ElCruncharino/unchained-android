@@ -10,47 +10,11 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/rootLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <TextView
-            android:id="@+id/tvName"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
-            android:layout_marginEnd="20dp"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:textAlignment="viewStart"
-            android:textAppearance="?attr/textAppearanceTitleLarge"
-            app:layout_constraintEnd_toStartOf="@id/ivProfilePic"
-            app:layout_constraintStart_toStartOf="@id/cvPremium"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/tvMail"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="20dp"
-            android:ellipsize="end"
-            android:focusable="false"
-            android:maxLines="1"
-            android:textAlignment="viewStart"
-            android:textAppearance="?attr/textAppearanceLabelMedium"
-            app:layout_constraintEnd_toStartOf="@id/ivProfilePic"
-            app:layout_constraintStart_toStartOf="@id/tvName"
-            app:layout_constraintTop_toBottomOf="@id/tvName" />
-
-        <ImageView
-            android:id="@+id/ivProfilePic"
-            android:layout_width="70dp"
-            android:layout_height="70dp"
-            android:contentDescription="@string/user_avatar"
-            android:src="@drawable/icon_arrows"
-            app:layout_constraintEnd_toEndOf="@id/cvPremium"
-            app:layout_constraintTop_toTopOf="@id/tvName" />
+        android:layout_height="wrap_content"
+        android:paddingBottom="20dp">
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cvPremium"
+            android:id="@+id/cvRealDebrid"
             style="?attr/materialCardViewElevatedStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -60,46 +24,91 @@
             android:checkable="false"
             android:clickable="false"
             android:focusable="false"
-            android:padding="10dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/ivProfilePic"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintWidth_max="500dp">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:padding="20dp">
+
+                <TextView
+                    android:id="@+id/tvRdService"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/real_debrid"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageView
+                    android:id="@+id/ivProfilePic"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:contentDescription="@string/user_avatar"
+                    android:src="@drawable/icon_arrows"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/tvName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="20dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textAlignment="viewStart"
+                    android:textAppearance="?attr/textAppearanceTitleLarge"
+                    app:layout_constraintEnd_toStartOf="@id/ivProfilePic"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvRdService" />
+
+                <TextView
+                    android:id="@+id/tvMail"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="20dp"
+                    android:ellipsize="end"
+                    android:focusable="false"
+                    android:maxLines="1"
+                    android:textAlignment="viewStart"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    app:layout_constraintEnd_toStartOf="@id/ivProfilePic"
+                    app:layout_constraintStart_toStartOf="@id/tvName"
+                    app:layout_constraintTop_toBottomOf="@id/tvName" />
 
                 <TextView
                     android:id="@+id/tvPremium"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
+                    android:layout_marginTop="20dp"
                     android:textAllCaps="true"
                     android:textAppearance="?attr/textAppearanceBodyLarge"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toBottomOf="@id/tvMail" />
 
                 <TextView
                     android:id="@+id/tvPremiumDays"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
                     android:textAppearance="?attr/textAppearanceLabelSmall"
                     app:layout_constraintStart_toStartOf="@id/tvPremium"
                     app:layout_constraintTop_toBottomOf="@id/tvPremium" />
 
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     android:id="@+id/pointsBar"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:indeterminate="false"
                     android:max="1000"
                     app:indicatorSize="25dp"
-                    app:layout_constraintBottom_toTopOf="@+id/tvPoints"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvPremiumDays"
                     app:trackCornerRadius="20dp"
@@ -112,81 +121,198 @@
                     android:layout_marginTop="10dp"
                     android:textAlignment="center"
                     android:textAppearance="?attr/textAppearanceLabelMedium"
-                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/pointsBar" />
 
+                <TextView
+                    android:id="@+id/tvRdDescription"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/rd_settings_link_description"
+                    android:textAlignment="center"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvPoints" />
+
+                <Button
+                    android:id="@+id/bAccount"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/account_page"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvRdDescription" />
+
+                <TextView
+                    android:id="@+id/tvRdNotConnected"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/real_debrid_not_connected"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvRdService" />
+
+                <androidx.constraintlayout.widget.Group
+                    android:id="@+id/groupRdConnected"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:constraint_referenced_ids="ivProfilePic,tvName,tvMail,tvPremium,tvPremiumDays,pointsBar,tvPoints,tvRdDescription,bAccount" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cvTorBox"
+            style="?attr/materialCardViewElevatedStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="20dp"
+            android:checkable="false"
+            android:clickable="false"
+            android:focusable="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cvRealDebrid"
+            app:layout_constraintWidth_max="500dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="20dp">
+
+                <TextView
+                    android:id="@+id/tvTbService"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/torbox"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/tvTbMail"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textAlignment="viewStart"
+                    android:textAppearance="?attr/textAppearanceTitleLarge"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvTbService" />
+
+                <TextView
+                    android:id="@+id/tvTbPlan"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvTbMail" />
+
+                <TextView
+                    android:id="@+id/tvTbPremiumDays"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceLabelSmall"
+                    app:layout_constraintStart_toStartOf="@id/tvTbPlan"
+                    app:layout_constraintTop_toBottomOf="@id/tvTbPlan" />
+
+                <TextView
+                    android:id="@+id/tvTbDownloaded"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvTbPremiumDays" />
+
+                <Button
+                    android:id="@+id/bTbAccount"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="20dp"
+                    android:nextFocusRight="@id/bTbSubscription"
+                    android:text="@string/account_page"
+                    app:layout_constraintEnd_toStartOf="@+id/bTbSubscription"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvTbDownloaded" />
+
+                <Button
+                    android:id="@+id/bTbSubscription"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_marginStart="20dp"
+                    android:nextFocusLeft="@id/bTbAccount"
+                    android:text="@string/subscription"
+                    app:layout_constraintBottom_toBottomOf="@id/bTbAccount"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/bTbAccount"
+                    app:layout_constraintTop_toTopOf="@id/bTbAccount" />
+
+                <TextView
+                    android:id="@+id/tvTbNotConnected"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/torbox_not_connected"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvTbService" />
+
+                <androidx.constraintlayout.widget.Group
+                    android:id="@+id/groupTbConnected"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:constraint_referenced_ids="tvTbMail,tvTbPlan,tvTbPremiumDays,tvTbDownloaded,bTbAccount,bTbSubscription" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/tvLoginDescription"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="20dp"
             android:layout_marginEnd="10dp"
             android:autoLink="web"
             android:textAlignment="center"
             android:textAppearance="?attr/textAppearanceBodyMedium"
-            app:layout_constraintBottom_toTopOf="@+id/divider"
-            app:layout_constraintEnd_toEndOf="@id/cvPremium"
-            app:layout_constraintStart_toStartOf="@id/cvPremium"
-            app:layout_constraintTop_toBottomOf="@id/cvPremium" />
-
-        <com.google.android.material.divider.MaterialDivider
-            android:id="@+id/divider"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            app:layout_constraintBottom_toTopOf="@+id/tvDescription"
-            app:layout_constraintEnd_toEndOf="@id/cvPremium"
-            app:layout_constraintStart_toStartOf="@id/cvPremium"
-            app:layout_constraintTop_toBottomOf="@+id/tvLoginDescription" />
-
-        <TextView
-            android:id="@+id/tvDescription"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_marginTop="10dp"
-            android:layout_marginEnd="10dp"
-            android:text="@string/rd_settings_link_description"
-            android:textAlignment="center"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            app:layout_constraintBottom_toTopOf="@+id/bAccount"
-            app:layout_constraintEnd_toEndOf="@id/cvPremium"
-            app:layout_constraintStart_toStartOf="@id/cvPremium"
-            app:layout_constraintTop_toBottomOf="@id/divider" />
-
-        <Button
-            android:id="@+id/bAccount"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_marginEnd="20dp"
-            android:nextFocusRight="@id/bSettings"
-            android:text="@string/account_page"
-            app:layout_constraintEnd_toStartOf="@+id/bSettings"
-            app:layout_constraintStart_toStartOf="@id/cvPremium"
-            app:layout_constraintTop_toBottomOf="@id/tvDescription" />
+            app:layout_constraintEnd_toEndOf="@id/cvTorBox"
+            app:layout_constraintStart_toStartOf="@id/cvTorBox"
+            app:layout_constraintTop_toBottomOf="@id/cvTorBox" />
 
         <Button
             android:id="@+id/bSettings"
             style="@style/Widget.Material3.Button"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_marginStart="20dp"
-            android:nextFocusLeft="@id/bAccount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:minWidth="170dp"
             android:text="@string/settings"
-            app:layout_constraintBottom_toBottomOf="@id/bAccount"
-            app:layout_constraintEnd_toEndOf="@id/cvPremium"
-            app:layout_constraintStart_toEndOf="@+id/bAccount"
-            app:layout_constraintTop_toTopOf="@id/bAccount" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvLoginDescription" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
