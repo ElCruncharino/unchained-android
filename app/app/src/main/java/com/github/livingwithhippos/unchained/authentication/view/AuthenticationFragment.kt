@@ -22,6 +22,7 @@ import com.github.livingwithhippos.unchained.statemachine.authentication.FSMAuth
 import com.github.livingwithhippos.unchained.statemachine.authentication.FSMAuthenticationState
 import com.github.livingwithhippos.unchained.utilities.EventObserver
 import com.github.livingwithhippos.unchained.utilities.PRIVATE_TOKEN
+import com.github.livingwithhippos.unchained.utilities.TORBOX_API_KEY_PATTERN
 import com.github.livingwithhippos.unchained.utilities.extension.copyToClipboard
 import com.github.livingwithhippos.unchained.utilities.extension.getClipboardText
 import com.github.livingwithhippos.unchained.utilities.extension.getThemeColor
@@ -236,6 +237,8 @@ class AuthenticationFragment : UnchainedFragment() {
                 if (token != null) {
                     binding.cbToken.isChecked = true
                     binding.cbToken.text = getString(R.string.obtained_token)
+                    // oauth tokens are always real debrid, reset the provider flag
+                    activityViewModel.updateDebridProvider(token.accessToken)
                     // update the current credentials
                     activityViewModel.updateCredentialsAccessToken(token.accessToken)
                     activityViewModel.updateCredentialsRefreshToken(token.refreshToken)
@@ -280,9 +283,12 @@ class AuthenticationFragment : UnchainedFragment() {
 
     fun onSaveCodeClick(codeInputField: TextInputEditText) {
         val token: String = codeInputField.text.toString().trim()
-        // mine is 52 characters
-        if (token.length < 40) context?.showToast(R.string.invalid_token)
+        val isTorBoxKey = token.matches(TORBOX_API_KEY_PATTERN.toRegex())
+        // real debrid tokens are around 52 characters, torbox api keys are 36 characters uuids
+        if (token.length < 40 && !isTorBoxKey) context?.showToast(R.string.invalid_token)
         else {
+            // set the provider so the api calls are routed to the right service
+            activityViewModel.updateDebridProvider(token)
             // pass the value to be checked and eventually saved
             activityViewModel.updateCredentials(
                 accessToken = token,

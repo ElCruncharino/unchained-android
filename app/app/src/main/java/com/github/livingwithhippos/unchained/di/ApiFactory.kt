@@ -18,6 +18,7 @@ import com.github.livingwithhippos.unchained.data.remote.HostsApiHelperImpl
 import com.github.livingwithhippos.unchained.data.remote.StreamingApi
 import com.github.livingwithhippos.unchained.data.remote.StreamingApiHelper
 import com.github.livingwithhippos.unchained.data.remote.StreamingApiHelperImpl
+import com.github.livingwithhippos.unchained.data.remote.TorBoxApi
 import com.github.livingwithhippos.unchained.data.remote.TorrentApiHelper
 import com.github.livingwithhippos.unchained.data.remote.TorrentApiHelperImpl
 import com.github.livingwithhippos.unchained.data.remote.TorrentsApi
@@ -36,6 +37,7 @@ import com.github.livingwithhippos.unchained.data.remote.VariousApiHelperImpl
 import com.github.livingwithhippos.unchained.plugins.Parser
 import com.github.livingwithhippos.unchained.utilities.BASE_AUTH_URL
 import com.github.livingwithhippos.unchained.utilities.BASE_URL
+import com.github.livingwithhippos.unchained.utilities.TORBOX_BASE_URL
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -224,6 +226,24 @@ object ApiFactory {
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(MoshiConverterFactory.create())
             .build()
+    }
+
+    @Provides
+    @Singleton
+    @TorBoxRetrofit
+    fun torBoxRetrofit(@ClassicClient okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .client(okHttpClient)
+            .baseUrl(TORBOX_BASE_URL)
+            .addConverterFactory(MoshiConverterFactory.create())
+            .build()
+    }
+
+    // torbox api injection
+    @Provides
+    @Singleton
+    fun provideTorBoxApi(@TorBoxRetrofit retrofit: Retrofit): TorBoxApi {
+        return retrofit.create(TorBoxApi::class.java)
     }
 
     // authentication api injection
