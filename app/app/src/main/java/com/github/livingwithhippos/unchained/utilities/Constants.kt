@@ -36,10 +36,18 @@ const val TORBOX_ACCOUNT_LINK = "https://torbox.app/settings"
 const val TORBOX_SUBSCRIPTION_LINK = "https://torbox.app/subscription"
 
 /**
- * where new torrents go when both services are active, values are [PROVIDER_REAL_DEBRID] (default)
- * and [PROVIDER_TORBOX]
+ * where new torrents go when both services are active, values are [PROVIDER_REAL_DEBRID]
+ * (default), [PROVIDER_TORBOX] and [PROVIDER_BOTH]. The new download screen exposes the same
+ * choice as a per-add control and writes the selection back here, so this is always the last
+ * choice made
  */
 const val KEY_ADD_TORRENTS_PROVIDER = "add_torrents_provider"
+
+/**
+ * new torrents are sent to both services: the app flow follows the real debrid upload while the
+ * torbox copy is a best effort side call
+ */
+const val PROVIDER_BOTH = "both"
 
 /** mapped torbox torrent ids are prefixed with this so every api call can be routed by id */
 const val TORBOX_TORRENT_ID_PREFIX = "tb-"

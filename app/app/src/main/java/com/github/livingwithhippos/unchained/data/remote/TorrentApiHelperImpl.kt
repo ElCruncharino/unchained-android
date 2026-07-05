@@ -9,6 +9,7 @@ import com.github.livingwithhippos.unchained.data.model.UploadedTorrent
 import com.github.livingwithhippos.unchained.data.model.toTorrentItem
 import com.github.livingwithhippos.unchained.data.model.toUploadedTorrent
 import com.github.livingwithhippos.unchained.utilities.KEY_ADD_TORRENTS_PROVIDER
+import com.github.livingwithhippos.unchained.utilities.PROVIDER_BOTH
 import com.github.livingwithhippos.unchained.utilities.PROVIDER_REAL_DEBRID
 import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
 import com.github.livingwithhippos.unchained.utilities.TORBOX_TORRENT_ID_PREFIX
@@ -51,14 +52,35 @@ constructor(
         else Response.success(listOf(AvailableHost(host = PROVIDER_TORBOX, maxFileSize = 0)))
 
     /**
-     * true when a new torrent should be sent to torbox instead of real debrid: torbox is the only
-     * active service, or both are active and the user picked torbox in the settings
+     * where a new torrent goes: the only active service when just one is logged in, otherwise the
+     * [KEY_ADD_TORRENTS_PROVIDER] preference ([PROVIDER_REAL_DEBRID], [PROVIDER_TORBOX] or
+     * [PROVIDER_BOTH]). The new download screen writes its per-add choice into the preference
+     * right when it is made, so no call signatures had to change to pass it down
      */
-    private fun addToTorBox(token: String): Boolean {
-        if (torBoxAuth(token) == null) return false
-        if (!isRealDebridActive(token)) return true
-        return preferences.getString(KEY_ADD_TORRENTS_PROVIDER, PROVIDER_REAL_DEBRID) ==
-            PROVIDER_TORBOX
+    private fun addTorrentsDestination(token: String): String {
+        if (torBoxAuth(token) == null) return PROVIDER_REAL_DEBRID
+        if (!isRealDebridActive(token)) return PROVIDER_TORBOX
+        return preferences.getString(KEY_ADD_TORRENTS_PROVIDER, PROVIDER_REAL_DEBRID)
+            ?: PROVIDER_REAL_DEBRID
+    }
+
+    /**
+     * sends the torbox copy of a new torrent when the destination is [PROVIDER_BOTH]. Best
+     * effort: the app flow follows the real debrid upload, so a torbox failure is only logged and
+     * never breaks the call
+     */
+    private suspend fun addToTorBoxQuietly(
+        token: String,
+        call: suspend (auth: String) -> Response<TorBoxCreateTorrentResponse>,
+    ) {
+        val auth = torBoxAuth(token) ?: return
+        try {
+            val response = call(auth)
+            if (!response.isSuccessful || response.body()?.success != true)
+                Timber.w("TorBox copy of the new torrent failed with code ${response.code()}")
+        } catch (e: Exception) {
+            Timber.w(e, "TorBox copy of the new torrent failed")
+        }
     }
 
     override suspend fun getTorrentInfo(token: String, id: String): Response<TorrentItem> {
@@ -76,10 +98,23 @@ constructor(
         binaryTorrent: RequestBody,
         host: String,
     ): Response<UploadedTorrent> {
-        if (!addToTorBox(token)) return torrentsApi.addTorrent(token, binaryTorrent, host)
-        val auth = torBoxAuth(token) ?: return torBoxErrorResponse(401)
-        val filePart = MultipartBody.Part.createFormData("file", "upload.torrent", binaryTorrent)
-        return mapCreatedTorrent(torBoxApi.createTorrentFromFile(auth, filePart))
+        when (addTorrentsDestination(token)) {
+            PROVIDER_TORBOX -> {
+                val auth = torBoxAuth(token) ?: return torBoxErrorResponse(401)
+                val filePart =
+                    MultipartBody.Part.createFormData("file", "upload.torrent", binaryTorrent)
+                return mapCreatedTorrent(torBoxApi.createTorrentFromFile(auth, filePart))
+            }
+            PROVIDER_BOTH -> {
+                // the byte array backed body is repeatable, so it can be sent to both services
+                addToTorBoxQuietly(token) {
+                    val filePart =
+                        MultipartBody.Part.createFormData("file", "upload.torrent", binaryTorrent)
+                    torBoxApi.createTorrentFromFile(it, filePart)
+                }
+            }
+        }
+        return torrentsApi.addTorrent(token, binaryTorrent, host)
     }
 
     override suspend fun addMagnet(
@@ -87,10 +122,22 @@ constructor(
         magnet: String,
         host: String,
     ): Response<UploadedTorrent> {
-        if (!addToTorBox(token)) return torrentsApi.addMagnet(token, magnet, host)
-        val auth = torBoxAuth(token) ?: return torBoxErrorResponse(401)
-        val magnetPart = magnet.toRequestBody("text/plain".toMediaTypeOrNull())
-        return mapCreatedTorrent(torBoxApi.createTorrentFromMagnet(auth, magnetPart))
+        when (addTorrentsDestination(token)) {
+            PROVIDER_TORBOX -> {
+                val auth = torBoxAuth(token) ?: return torBoxErrorResponse(401)
+                val magnetPart = magnet.toRequestBody("text/plain".toMediaTypeOrNull())
+                return mapCreatedTorrent(torBoxApi.createTorrentFromMagnet(auth, magnetPart))
+            }
+            PROVIDER_BOTH -> {
+                addToTorBoxQuietly(token) {
+                    torBoxApi.createTorrentFromMagnet(
+                        it,
+                        magnet.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    )
+                }
+            }
+        }
+        return torrentsApi.addMagnet(token, magnet, host)
     }
 
     private fun mapCreatedTorrent(

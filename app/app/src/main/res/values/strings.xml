@@ -788,4 +788,6 @@
     <string name="real_debrid_not_connected">Not connected. Log out and use the login screen to add a Real-Debrid account.</string>
     <string name="torbox_not_connected">Not connected. Add your TorBox API key from the app settings or the login screen.</string>
     <string name="torbox_account_error">Could not load the TorBox account details. Check the API key or try again later.</string>
+    <string name="both">Both</string>
+    <string name="torrent_also_sent_torbox">Also sending the torrent to TorBox</string>
 </resources>
