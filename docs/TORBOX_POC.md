@@ -1,6 +1,6 @@
 # TorBox proof of concept
 
-Phases 1 and 2 of a TorBox integration. The goal is to show that TorBox support fits the existing
+Phases 1, 2 and 3 of a TorBox integration. The goal is to show that TorBox support fits the existing
 architecture without a rewrite: everything above the `*ApiHelperImpl` layer (helper interfaces,
 repositories, viewmodels, fragments) is untouched, except for a settings entry and the token save
 path in the login screen.
@@ -60,6 +60,30 @@ path in the login screen.
   no `torrent_id`) is reported as an error, because the app cannot follow a queued torrent yet.
 - `POST torrents/controltorrent` with the `delete` operation backs `deleteTorrent` for `tb-` ids.
 
+### Download links (phase 3)
+
+- On Real-Debrid a downloaded torrent carries a list of hoster links that the unrestrict endpoint
+  turns into direct download URLs one by one. TorBox has no hoster links: `torrents/requestdl`
+  returns a CDN URL per file. To reuse the whole existing download flow, a mapped TorBox torrent
+  whose download is ready (`download_finished` or `download_present`) gets one synthetic link per
+  file: `torbox://<torrent_id>/<file_id>?name=<url encoded file name>&size=<bytes>&mime=<mimetype>`.
+  The file name, size and mimetype are encoded into the link at mapping time, so the unrestrict
+  step does not need to fetch the torrent again (`requestdl` alone returns no file metadata).
+- `UnrestrictApiHelperImpl.getUnrestrictedLink` recognizes the `torbox://` scheme, calls
+  `torrents/requestdl` (which wants the raw API key as a `token` query parameter, no `Bearer`
+  prefix, same key resolution as the other TorBox calls) and synthesizes the `DownloadItem` from
+  the returned CDN URL plus the metadata in the link: id `tb-<torrent_id>-<file_id>`, host
+  `torbox`, streamable when the mimetype is video or audio so the "send to player" buttons show
+  up. Any other link goes to the Real-Debrid unrestrict endpoint unchanged.
+- Because the links list is populated, the existing UI flows work as they are: a single file
+  torrent unrestricts straight to the download details screen, a multi file torrent opens the
+  folder list screen which unrestricts every synthetic link through the same repository call.
+  Download to device, send to player (local and Kodi/VLC remotes), open, copy and share all
+  operate on the CDN URL.
+- TorBox download URLs are valid to start for 3 hours. The app mints them on demand right before
+  use so this rarely matters, and the unrestrict cache TTL (2 hours) is below the validity window.
+  Only links copied/shared and used much later can expire; unrestricting again mints a fresh one.
+
 ## What works
 
 - Login with a TorBox API key, Real-Debrid key or OAuth, in any combination and order (TorBox
@@ -70,12 +94,23 @@ path in the login screen.
 - Adding magnets and .torrent files to either service, with the settings choice when both are
   active
 - Deleting TorBox torrents, torrent details for `tb-` ids (mapped from `mylist?id=`)
+- Downloading TorBox files: single file torrents go straight to the download details screen,
+  multi file torrents open the folder list, both backed by `torrents/requestdl` CDN URLs
 
 ## Known limitations / out of scope
 
-- Phase 3: download links. `torrents/requestdl` is not wired, so TorBox torrents expose no links
-  and the download/unrestrict/streaming flows do nothing for them.
 - Phase 4: web downloads / hosters via the TorBox `webdl` endpoints.
+- TorBox downloads are not persisted anywhere: Real-Debrid keeps an account side downloads list
+  (unrestricting adds to it, the downloads tab reads it), TorBox has nothing equivalent, so
+  unrestricted TorBox files never appear in the downloads tab and the delete button on their
+  download details screen hits the Real-Debrid endpoint and just reports an error.
+- The transcoded streams button ("load streams") stays disabled for TorBox items (they carry no
+  alternative streams), matching how it behaves for Real-Debrid users without streaming support;
+  if it were somehow triggered the RD streaming call fails and is logged without UI effect. The
+  "stream in browser" entry of the streaming popup builds a real-debrid.com URL, which for a
+  `tb-` id opens a broken web page. The other popup entries (Kodi, VLC and friends) receive the
+  plain CDN URL and work.
+- The whole torrent zip download (`requestdl` with `zip_link=true`) is not wired.
 - The user screen only shows the Real-Debrid account when both services are active; the TorBox
   account info is not displayed anywhere in that case.
 - The list filter (e.g. active torrents) is only applied to the Real-Debrid page; the appended
@@ -84,5 +119,5 @@ path in the login screen.
   endpoint at 1000 items anyway).
 - Setting the TorBox key from settings while completely logged out stores the key, but the login
   screen still expects a token paste to authenticate the app itself.
-- None of this has been exercised against live accounts; the mapping is based on the public API
-  documentation with defensive parsing.
+- None of this has been exercised against live accounts; the mapping (including the exact
+  `requestdl` response shape) is based on the public API documentation with defensive parsing.
