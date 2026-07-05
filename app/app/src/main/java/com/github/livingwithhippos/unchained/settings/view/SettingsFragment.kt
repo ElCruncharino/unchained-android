@@ -22,6 +22,8 @@ import com.github.livingwithhippos.unchained.settings.viewmodel.SettingEvent
 import com.github.livingwithhippos.unchained.settings.viewmodel.SettingsViewModel
 import com.github.livingwithhippos.unchained.utilities.FEEDBACK_URL
 import com.github.livingwithhippos.unchained.utilities.GPLV3_URL
+import com.github.livingwithhippos.unchained.utilities.KEY_TORBOX_API_KEY
+import com.github.livingwithhippos.unchained.utilities.TORBOX_API_KEY_PATTERN
 import com.github.livingwithhippos.unchained.utilities.extension.getThemeList
 import com.github.livingwithhippos.unchained.utilities.extension.openExternalWebPage
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
@@ -82,6 +84,20 @@ class SettingsFragment : PreferenceFragmentCompat() {
         findPreference<Preference>("user_logout")?.setOnPreferenceClickListener {
             viewModel.userLogout()
             true
+        }
+
+        findPreference<EditTextPreference>(KEY_TORBOX_API_KEY)?.setOnPreferenceChangeListener {
+            _,
+            newValue ->
+            val key = newValue.toString().trim()
+            // an empty value removes the torbox account, otherwise only accept uuid shaped keys
+            if (key.isEmpty() || key.matches(TORBOX_API_KEY_PATTERN.toRegex())) {
+                viewModel.updateTorBoxApiKey(key)
+                true
+            } else {
+                context?.showToast(R.string.invalid_token)
+                false
+            }
         }
 
         findPreference<EditTextPreference>("filter_size_mb")?.setOnBindEditTextListener {

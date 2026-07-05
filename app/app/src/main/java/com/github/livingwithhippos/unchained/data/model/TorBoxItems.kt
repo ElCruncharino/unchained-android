@@ -1,5 +1,6 @@
 package com.github.livingwithhippos.unchained.data.model
 
+import com.github.livingwithhippos.unchained.utilities.TORBOX_TORRENT_ID_PREFIX
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import java.time.Duration
@@ -94,16 +95,20 @@ fun TorBoxUser.toUser(): User {
     )
 }
 
-/** maps a torbox torrent to the real debrid [TorrentItem] model used by the rest of the app */
+/**
+ * maps a torbox torrent to the real debrid [TorrentItem] model used by the rest of the app. The id
+ * is prefixed with [TORBOX_TORRENT_ID_PREFIX] so every action on the item can be routed back to
+ * torbox, and the host is set to "torbox" to tell the items apart in the lists
+ */
 fun TorBoxTorrent.toTorrentItem(): TorrentItem {
     return TorrentItem(
-        id = id.toString(),
+        id = TORBOX_TORRENT_ID_PREFIX + id,
         filename = name ?: "",
         originalFilename = name,
         hash = hash ?: "",
         bytes = size ?: 0L,
         originalBytes = size,
-        host = "torbox.app",
+        host = "torbox",
         split = 0,
         // torbox progress is a 0..1 float, real debrid uses 0..100
         progress = ((progress ?: 0.0) * 100).toFloat().coerceIn(0f, 100f),

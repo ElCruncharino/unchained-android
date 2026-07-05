@@ -14,7 +14,9 @@ constructor(
     private val preferences: SharedPreferences,
 ) : UserApiHelper {
     override suspend fun getUser(token: String): Response<User> {
-        if (!preferences.isTorBoxProvider()) return userApi.getUser(token)
+        // the stored token is a real debrid one unless torbox was used for the main login, so
+        // when both accounts are active the real debrid user is shown
+        if (!isTorBoxApiKey(token)) return userApi.getUser(token)
         // route the call to torbox and map the result to the real debrid user model
         val response = torBoxApi.getUserInfo(token)
         val user = response.body()?.data
