@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import com.github.livingwithhippos.unchained.data.model.TorBoxControlRequest
 import com.github.livingwithhippos.unchained.data.model.TorBoxControlResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxCreateTorrentResponse
+import com.github.livingwithhippos.unchained.data.model.TorBoxRequestDownloadResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxTorrentListResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxTorrentResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxUserResponse
@@ -63,6 +64,17 @@ interface TorBoxApi {
         @Header("Authorization") token: String,
         @Body operation: TorBoxControlRequest,
     ): Response<TorBoxControlResponse>
+
+    /**
+     * exchanges a torrent file for a CDN download url, valid to start for 3 hours. This endpoint
+     * authenticates with the raw api key as a query parameter instead of the header
+     */
+    @GET("torrents/requestdl")
+    suspend fun requestDownloadLink(
+        @Query("token") token: String,
+        @Query("torrent_id") torrentId: Int,
+        @Query("file_id") fileId: Int,
+    ): Response<TorBoxRequestDownloadResponse>
 }
 
 private val torBoxKeyRegex = TORBOX_API_KEY_PATTERN.toRegex()
