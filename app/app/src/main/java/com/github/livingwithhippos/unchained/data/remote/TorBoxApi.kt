@@ -1,15 +1,25 @@
 package com.github.livingwithhippos.unchained.data.remote
 
 import android.content.SharedPreferences
+import com.github.livingwithhippos.unchained.data.model.TorBoxControlRequest
+import com.github.livingwithhippos.unchained.data.model.TorBoxControlResponse
+import com.github.livingwithhippos.unchained.data.model.TorBoxCreateTorrentResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxTorrentListResponse
+import com.github.livingwithhippos.unchained.data.model.TorBoxTorrentResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxUserResponse
 import com.github.livingwithhippos.unchained.utilities.KEY_TORBOX_API_KEY
 import com.github.livingwithhippos.unchained.utilities.TORBOX_API_KEY_PATTERN
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
+import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Query
 
 /** This interface is used by Retrofit to manage the REST calls to the torbox endpoints */
@@ -25,6 +35,34 @@ interface TorBoxApi {
         @Query("offset") offset: Int? = null,
         @Query("limit") limit: Int? = null,
     ): Response<TorBoxTorrentListResponse>
+
+    /** when the id parameter is used mylist returns a single torrent object instead of a list */
+    @GET("torrents/mylist")
+    suspend fun getTorrent(
+        @Header("Authorization") token: String,
+        @Query("id") id: String,
+        @Query("bypass_cache") bypassCache: Boolean = true,
+    ): Response<TorBoxTorrentResponse>
+
+    @Multipart
+    @POST("torrents/createtorrent")
+    suspend fun createTorrentFromMagnet(
+        @Header("Authorization") token: String,
+        @Part("magnet") magnet: RequestBody,
+    ): Response<TorBoxCreateTorrentResponse>
+
+    @Multipart
+    @POST("torrents/createtorrent")
+    suspend fun createTorrentFromFile(
+        @Header("Authorization") token: String,
+        @Part file: MultipartBody.Part,
+    ): Response<TorBoxCreateTorrentResponse>
+
+    @POST("torrents/controltorrent")
+    suspend fun controlTorrent(
+        @Header("Authorization") token: String,
+        @Body operation: TorBoxControlRequest,
+    ): Response<TorBoxControlResponse>
 }
 
 private val torBoxKeyRegex = TORBOX_API_KEY_PATTERN.toRegex()

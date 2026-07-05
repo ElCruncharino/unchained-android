@@ -29,6 +29,12 @@ const val PROVIDER_TORBOX = "torbox"
 /** the torbox api key is stored on its own so both services can be logged in at the same time */
 const val KEY_TORBOX_API_KEY = "torbox_api_key"
 
+/**
+ * where new torrents go when both services are active, values are [PROVIDER_REAL_DEBRID] (default)
+ * and [PROVIDER_TORBOX]
+ */
+const val KEY_ADD_TORRENTS_PROVIDER = "add_torrents_provider"
+
 /** mapped torbox torrent ids are prefixed with this so every api call can be routed by id */
 const val TORBOX_TORRENT_ID_PREFIX = "tb-"
 

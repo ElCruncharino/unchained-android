@@ -84,6 +84,14 @@
         <item>web_video_cast</item>
         <item>custom_player</item>
     </string-array>
+    <string-array name="add_torrents_service" translatable="false">
+        <item>Real-Debrid</item>
+        <item>TorBox</item>
+    </string-array>
+    <string-array name="add_torrents_service_values" translatable="false">
+        <item>real_debrid</item>
+        <item>torbox</item>
+    </string-array>
     <string-array name="downloader">
         <item>@string/download_manager_system</item>
         <item>@string/download_manager_okhttp</item>
