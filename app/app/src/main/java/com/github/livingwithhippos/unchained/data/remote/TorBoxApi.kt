@@ -4,10 +4,14 @@ import android.content.SharedPreferences
 import com.github.livingwithhippos.unchained.data.model.TorBoxControlRequest
 import com.github.livingwithhippos.unchained.data.model.TorBoxControlResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxCreateTorrentResponse
+import com.github.livingwithhippos.unchained.data.model.TorBoxCreateWebDownloadResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxRequestDownloadResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxTorrentListResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxTorrentResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxUserResponse
+import com.github.livingwithhippos.unchained.data.model.TorBoxWebControlRequest
+import com.github.livingwithhippos.unchained.data.model.TorBoxWebDownloadListResponse
+import com.github.livingwithhippos.unchained.data.model.TorBoxWebDownloadResponse
 import com.github.livingwithhippos.unchained.utilities.KEY_TORBOX_API_KEY
 import com.github.livingwithhippos.unchained.utilities.TORBOX_API_KEY_PATTERN
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -16,6 +20,8 @@ import okhttp3.RequestBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.Field
+import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Multipart
@@ -75,6 +81,51 @@ interface TorBoxApi {
         @Query("torrent_id") torrentId: Int,
         @Query("file_id") fileId: Int,
     ): Response<TorBoxRequestDownloadResponse>
+
+    /**
+     * queues a hoster link as a torbox web download. Unlike the real debrid unrestrict this is
+     * asynchronous: the file has to be fetched by torbox before download links are available
+     */
+    @FormUrlEncoded
+    @POST("webdl/createwebdownload")
+    suspend fun createWebDownload(
+        @Header("Authorization") token: String,
+        @Field("link") link: String,
+        @Field("password") password: String? = null,
+    ): Response<TorBoxCreateWebDownloadResponse>
+
+    @GET("webdl/mylist")
+    suspend fun getWebDownloadsList(
+        @Header("Authorization") token: String,
+        @Query("bypass_cache") bypassCache: Boolean = true,
+        @Query("offset") offset: Int? = null,
+        @Query("limit") limit: Int? = null,
+    ): Response<TorBoxWebDownloadListResponse>
+
+    /** when the id parameter is used mylist returns a single web download object instead */
+    @GET("webdl/mylist")
+    suspend fun getWebDownload(
+        @Header("Authorization") token: String,
+        @Query("id") id: String,
+        @Query("bypass_cache") bypassCache: Boolean = true,
+    ): Response<TorBoxWebDownloadResponse>
+
+    /**
+     * exchanges a web download file for a CDN download url, same raw key query parameter
+     * authentication as the torrents variant
+     */
+    @GET("webdl/requestdl")
+    suspend fun requestWebDownloadLink(
+        @Query("token") token: String,
+        @Query("web_id") webId: Int,
+        @Query("file_id") fileId: Int,
+    ): Response<TorBoxRequestDownloadResponse>
+
+    @POST("webdl/controlwebdownload")
+    suspend fun controlWebDownload(
+        @Header("Authorization") token: String,
+        @Body operation: TorBoxWebControlRequest,
+    ): Response<TorBoxControlResponse>
 }
 
 private val torBoxKeyRegex = TORBOX_API_KEY_PATTERN.toRegex()

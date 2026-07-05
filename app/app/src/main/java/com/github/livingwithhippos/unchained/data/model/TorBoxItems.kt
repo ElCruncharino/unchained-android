@@ -1,8 +1,10 @@
 package com.github.livingwithhippos.unchained.data.model
 
 import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
+import com.github.livingwithhippos.unchained.utilities.TORBOX_BASE_URL
 import com.github.livingwithhippos.unchained.utilities.TORBOX_LINK_SCHEME
 import com.github.livingwithhippos.unchained.utilities.TORBOX_TORRENT_ID_PREFIX
+import com.github.livingwithhippos.unchained.utilities.TORBOX_WEBDL_ID_PREFIX
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import java.net.URLDecoder
@@ -81,6 +83,62 @@ data class TorBoxRequestDownloadResponse(
     @param:Json(name = "error") val error: String?,
     @param:Json(name = "detail") val detail: String?,
     @param:Json(name = "data") val data: String?,
+)
+
+@JsonClass(generateAdapter = true)
+data class TorBoxWebDownloadListResponse(
+    @param:Json(name = "success") val success: Boolean,
+    @param:Json(name = "error") val error: String?,
+    @param:Json(name = "detail") val detail: String?,
+    @param:Json(name = "data") val data: List<TorBoxWebDownload>?,
+)
+
+@JsonClass(generateAdapter = true)
+data class TorBoxWebDownloadResponse(
+    @param:Json(name = "success") val success: Boolean,
+    @param:Json(name = "error") val error: String?,
+    @param:Json(name = "detail") val detail: String?,
+    @param:Json(name = "data") val data: TorBoxWebDownload?,
+)
+
+@JsonClass(generateAdapter = true)
+data class TorBoxCreateWebDownloadResponse(
+    @param:Json(name = "success") val success: Boolean,
+    @param:Json(name = "error") val error: String?,
+    @param:Json(name = "detail") val detail: String?,
+    @param:Json(name = "data") val data: TorBoxCreatedWebDownload?,
+)
+
+/** the docs are vague on the id field name, parse both webdownload_id and id defensively */
+@JsonClass(generateAdapter = true)
+data class TorBoxCreatedWebDownload(
+    @param:Json(name = "webdownload_id") val webDownloadId: Int?,
+    @param:Json(name = "id") val id: Int?,
+    @param:Json(name = "hash") val hash: String?,
+    @param:Json(name = "name") val name: String?,
+)
+
+/** body of the controlwebdownload call, the operation is a string like "delete" */
+@JsonClass(generateAdapter = true)
+data class TorBoxWebControlRequest(
+    @param:Json(name = "webdl_id") val webdlId: Int,
+    @param:Json(name = "operation") val operation: String,
+)
+
+/** a hoster download queued on torbox, its files share the shape of the torrent files */
+@JsonClass(generateAdapter = true)
+data class TorBoxWebDownload(
+    @param:Json(name = "id") val id: Int,
+    @param:Json(name = "hash") val hash: String?,
+    @param:Json(name = "name") val name: String?,
+    @param:Json(name = "size") val size: Long?,
+    @param:Json(name = "download_state") val downloadState: String?,
+    // 0..1 float
+    @param:Json(name = "progress") val progress: Double?,
+    @param:Json(name = "download_finished") val downloadFinished: Boolean?,
+    @param:Json(name = "download_present") val downloadPresent: Boolean?,
+    @param:Json(name = "created_at") val createdAt: String?,
+    @param:Json(name = "files") val files: List<TorBoxTorrentFile>?,
 )
 
 @JsonClass(generateAdapter = true)
@@ -280,6 +338,56 @@ fun TorBoxFileLink.toDownloadItem(originalLink: String, downloadUrl: String): Do
         download = downloadUrl,
         streamable = if (streamable) 1 else 0,
         generated = null,
+        type = null,
+        alternative = null,
+    )
+}
+
+/** true once the web download files are on the torbox servers and requestdl can serve them */
+fun TorBoxWebDownload.isDownloadReady(): Boolean =
+    downloadFinished == true || downloadPresent == true
+
+/**
+ * permalink form of webdl/requestdl: every hit 302-redirects to a fresh CDN url, so a list item
+ * can carry a working download url with zero extra api calls. WARNING: the url embeds the user's
+ * raw torbox api key (the endpoint has no other authentication), so sharing it shares the key
+ */
+fun torBoxWebDownloadPermalink(rawApiKey: String, webId: Int, fileId: Int): String =
+    "${TORBOX_BASE_URL}webdl/requestdl?token=$rawApiKey&web_id=$webId&file_id=$fileId&redirect=true"
+
+/**
+ * maps a ready torbox web download to real debrid style [DownloadItem]s, one per file, with the
+ * [torBoxWebDownloadPermalink] as the download url. Web downloads still being fetched by torbox
+ * map to an empty list since their files cannot be served yet
+ */
+fun TorBoxWebDownload.toDownloadItems(rawApiKey: String): List<DownloadItem> {
+    if (!isDownloadReady()) return emptyList()
+    return files.orEmpty().map { file ->
+        toDownloadItem(file, torBoxWebDownloadPermalink(rawApiKey, id, file.id))
+    }
+}
+
+/**
+ * builds the [DownloadItem] for a single file of a torbox web download: id tbw-[web_id]-[file_id]
+ * (see [TORBOX_WEBDL_ID_PREFIX]) so the delete call can be routed back, [downloadUrl] either a
+ * minted CDN url or the redirect permalink
+ */
+fun TorBoxWebDownload.toDownloadItem(file: TorBoxTorrentFile, downloadUrl: String): DownloadItem {
+    val streamable =
+        file.mimetype?.startsWith("video/") == true || file.mimetype?.startsWith("audio/") == true
+    return DownloadItem(
+        id = "$TORBOX_WEBDL_ID_PREFIX$id-${file.id}",
+        filename = file.shortName ?: file.name?.substringAfterLast('/') ?: name ?: "",
+        mimeType = file.mimetype,
+        fileSize = file.size ?: size ?: 0L,
+        link = downloadUrl,
+        host = PROVIDER_TORBOX,
+        hostIcon = null,
+        chunks = 1,
+        crc = null,
+        download = downloadUrl,
+        streamable = if (streamable) 1 else 0,
+        generated = createdAt,
         type = null,
         alternative = null,
     )
