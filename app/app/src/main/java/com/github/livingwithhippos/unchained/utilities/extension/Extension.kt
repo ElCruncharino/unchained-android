@@ -40,6 +40,7 @@ import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Comp
 import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Companion.THEME_DAY
 import com.github.livingwithhippos.unchained.settings.view.ThemeItem
 import com.github.livingwithhippos.unchained.utilities.EitherResult
+import com.github.livingwithhippos.unchained.utilities.TORBOX_ERROR_WEBDL_QUEUED
 import java.util.Locale
 import timber.log.Timber
 
@@ -402,6 +403,8 @@ fun Context.getApiErrorMessage(errorCode: Int?): String {
         34 -> getString(R.string.too_many_requests)
         35 -> getString(R.string.infringing_file)
         36 -> getString(R.string.usage_limit_reached)
+        // synthetic code, not from real debrid: a link queued on torbox but not fetched yet
+        TORBOX_ERROR_WEBDL_QUEUED -> getString(R.string.torbox_download_queued)
         else -> getString(R.string.unknown_error)
     }
 }
