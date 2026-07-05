@@ -30,10 +30,10 @@ page, the new download screen and the list adapters now know about the two servi
   - Pasting a Real-Debrid token (or logging in with OAuth) goes through the normal Real-Debrid
     path and never touches `torbox_api_key`.
 - Settings has a "TorBox API key" field (bound to the same preference) to add, replace or remove
-  the TorBox account at any time, which is also the way to add TorBox while already logged into
-  Real-Debrid since the login screen is only reachable when logged out. Clearing the field removes
-  the TorBox account; when TorBox is the main app login the DataStore copy of the key is kept in
-  sync with this field.
+  the TorBox account at any time. Clearing the field removes the TorBox account; when TorBox is
+  the main app login the DataStore copy of the key is kept in sync with this field. The user page
+  cards can also connect either missing service in place (see the UX round below), so the settings
+  field is no longer the only way to add TorBox while Real-Debrid is logged in.
 - Logout removes the credentials of both services. A TorBox key rejected during login validation
   is also removed from `torbox_api_key`.
 
@@ -133,9 +133,28 @@ page, the new download screen and the list adapters now know about the two servi
   `user/me` data: email, plan (0 Free, 1 Essential, 2 Pro, 3 Standard), remaining premium days
   (from `premium_expires_at`) and total downloaded, with buttons opening torbox.app/settings (key
   management) and torbox.app/subscription (plan). No TorBox button opens real-debrid.com.
-- A service that is not logged in shows a compact "not connected" hint on its card: the
-  Real-Debrid one points to the login screen (reachable after logout), the TorBox one to the API
-  key field in the settings or on the login screen.
+- A service that is not logged in shows a one line "not connected" hint plus a Connect button on
+  its card, so the missing account can be added right there instead of logging out. Both buttons
+  open a Material dialog with a short explanation, a tappable link to the token page and an input
+  field with a paste button (mirroring the login screen row):
+  - The TorBox dialog links to torbox.app/settings, validates the UUID shape of the key (invalid
+    keys show the usual invalid token toast and keep the dialog open) and then runs the exact
+    save path of the login screen and the settings field: the key always goes to the
+    `torbox_api_key` preference, and it only also feeds the DataStore/state machine when
+    Real-Debrid is not the main login. The card refreshes right after. The same dialog is offered
+    when the TorBox card shows a key error, as a way to replace a dead key.
+  - The Real-Debrid dialog links to real-debrid.com/apitoken and takes the private API token. A
+    UUID shaped paste is refused with a toast pointing to the TorBox card (it is a TorBox key),
+    a too short one with the invalid token toast, both keeping the dialog open. A plausible token
+    is verified against the Real-Debrid `user` endpoint before anything is stored: on failure a
+    toast reports it and nothing changes, on success the token replaces the DataStore credentials
+    (with the usual private token sentinel fields) and the page refreshes. The `torbox_api_key`
+    preference is untouched, so the previously main TorBox login stays active next to the new
+    Real-Debrid one. No state machine event is needed: this flow only runs while the FSM is
+    already in its authenticated private token state (TorBox key as app login) and a Real-Debrid
+    private token is a private token login too; the token refresh logic keeps ignoring private
+    tokens after the swap. The dialog also mentions that the OAuth login is still available from
+    the login screen after logging out: the device flow is not wired into the user page.
 - The TorBox account is fetched independently of the main login through a small dedicated
   `TorBoxRepository` (wrapping `TorBoxApi.getUserInfo` with the same key resolution as the api
   helpers: the `torbox_api_key` preference first, the stored login token when it is UUID shaped)
@@ -183,9 +202,11 @@ page, the new download screen and the list adapters now know about the two servi
 ## What works
 
 - Login with a TorBox API key (own section on the login screen), Real-Debrid key or OAuth, in any
-  combination and order (TorBox while Real-Debrid is active is added from settings)
-- User screen: one card per service with its own account info, action buttons pointing at the
-  right service and a "not connected" hint for the missing one
+  combination and order
+- User screen: one card per service with its own account info and action buttons pointing at the
+  right service; the missing service shows a Connect button opening a dialog that adds the
+  account in place (Real-Debrid private token, checked against the API before being stored, or
+  TorBox API key). OAuth stays on the login screen, reachable after logout
 - Merged torrents list with per-item routing, TorBox rows labeled with a "TorBox" tag
 - Adding magnets and .torrent files to either service or to both at once, chosen per add from the
   new download screen when both are active (kept in sync with the settings entry)
@@ -229,6 +250,9 @@ page, the new download screen and the list adapters now know about the two servi
   (TorBox caps both endpoints at 1000 items anyway).
 - Setting the TorBox key from settings while completely logged out stores the key, but the login
   screen still expects a token paste to authenticate the app itself.
+- The Real-Debrid connect dialog on the user page reports any failed token check as an invalid
+  token, including plain network errors; retrying once the connection is back is the recovery
+  path. OAuth cannot be started from that dialog, it stays on the login screen.
 - None of this has been exercised against live accounts; the mapping (including the exact
   `requestdl` response shapes and the `createwebdownload` result) is based on the public API
   documentation and the OpenAPI spec with defensive parsing.

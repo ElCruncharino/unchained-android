@@ -785,9 +785,14 @@
     <string name="torbox_plan_pro" translatable="false">Pro</string>
     <string name="torbox_plan_standard" translatable="false">Standard</string>
     <string name="torbox_total_downloaded_format">Total downloaded: %1$s</string>
-    <string name="real_debrid_not_connected">Not connected. Log out and use the login screen to add a Real-Debrid account.</string>
-    <string name="torbox_not_connected">Not connected. Add your TorBox API key from the app settings or the login screen.</string>
+    <string name="real_debrid_not_connected">No Real-Debrid account connected.</string>
+    <string name="torbox_not_connected">No TorBox account connected.</string>
     <string name="torbox_account_error">Could not load the TorBox account details. Check the API key or try again later.</string>
+    <string name="connect">Connect</string>
+    <string name="connect_real_debrid_message">Paste your Real-Debrid private API token from https://real-debrid.com/apitoken to connect the account. The token will be checked before being saved.</string>
+    <string name="connect_real_debrid_oauth_hint">To use the OAuth login instead, log out and sign in from the login screen.</string>
+    <string name="connect_torbox_message">Paste your TorBox API key from the settings page at https://torbox.app/settings to connect the account.</string>
+    <string name="real_debrid_token_is_torbox">This looks like a TorBox API key. Use the Connect button on the TorBox card instead.</string>
     <string name="both">Both</string>
     <string name="torrent_also_sent_torbox">Also sending the torrent to TorBox</string>
     <string name="torbox_list_label_format" translatable="false">TorBox · %1$s</string>
