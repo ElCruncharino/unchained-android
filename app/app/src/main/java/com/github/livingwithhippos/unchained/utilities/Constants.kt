@@ -38,6 +38,13 @@ const val KEY_ADD_TORRENTS_PROVIDER = "add_torrents_provider"
 /** mapped torbox torrent ids are prefixed with this so every api call can be routed by id */
 const val TORBOX_TORRENT_ID_PREFIX = "tb-"
 
+/**
+ * scheme of the synthetic per-file links put into a torbox torrent's links list, shaped like
+ * torbox://[torrent_id]/[file_id]?name=[url encoded file name]&size=[bytes]&mime=[mimetype]. The
+ * unrestrict layer recognizes the scheme and exchanges the link for a fresh torbox CDN url
+ */
+const val TORBOX_LINK_SCHEME = "torbox://"
+
 // torbox api keys are uuids while real debrid private tokens are not
 const val TORBOX_API_KEY_PATTERN =
     "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"

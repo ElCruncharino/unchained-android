@@ -1,8 +1,12 @@
 package com.github.livingwithhippos.unchained.data.model
 
+import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
+import com.github.livingwithhippos.unchained.utilities.TORBOX_LINK_SCHEME
 import com.github.livingwithhippos.unchained.utilities.TORBOX_TORRENT_ID_PREFIX
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import java.net.URLDecoder
+import java.net.URLEncoder
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -68,6 +72,15 @@ data class TorBoxControlResponse(
     @param:Json(name = "success") val success: Boolean,
     @param:Json(name = "error") val error: String?,
     @param:Json(name = "detail") val detail: String?,
+)
+
+/** response of torrents/requestdl, without redirect=true the data field is the download url */
+@JsonClass(generateAdapter = true)
+data class TorBoxRequestDownloadResponse(
+    @param:Json(name = "success") val success: Boolean,
+    @param:Json(name = "error") val error: String?,
+    @param:Json(name = "detail") val detail: String?,
+    @param:Json(name = "data") val data: String?,
 )
 
 @JsonClass(generateAdapter = true)
@@ -140,6 +153,8 @@ fun TorBoxUser.toUser(): User {
  * torbox, and the host is set to "torbox" to tell the items apart in the lists
  */
 fun TorBoxTorrent.toTorrentItem(): TorrentItem {
+    // requestdl only works once the files are on the torbox servers
+    val downloadReady = downloadFinished == true || downloadPresent == true
     return TorrentItem(
         id = TORBOX_TORRENT_ID_PREFIX + id,
         filename = name ?: "",
@@ -162,7 +177,8 @@ fun TorBoxTorrent.toTorrentItem(): TorrentItem {
                     selected = 1,
                 )
             },
-        links = emptyList(),
+        links =
+            if (downloadReady) files.orEmpty().map { torBoxFileLink(id, it) } else emptyList(),
         ended = null,
         speed = downloadSpeed?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt(),
         seeders = seeds,
@@ -177,6 +193,96 @@ fun TorBoxCreatedTorrent.toUploadedTorrent(): UploadedTorrent? {
     val newId = torrentId ?: return null
     // the app only uses the uri field for logging, pass the hash through
     return UploadedTorrent(id = TORBOX_TORRENT_ID_PREFIX + newId, uri = hash ?: "")
+}
+
+/**
+ * builds the synthetic link representing a single torbox file, see [TORBOX_LINK_SCHEME]. The file
+ * name, size and mimetype are encoded into the link so the unrestrict layer can synthesize a
+ * [DownloadItem] without fetching the torrent again
+ */
+private fun torBoxFileLink(torrentId: Int, file: TorBoxTorrentFile): String {
+    val fileName = file.shortName ?: file.name?.substringAfterLast('/') ?: ""
+    return buildString {
+        append(TORBOX_LINK_SCHEME)
+        append(torrentId)
+        append('/')
+        append(file.id)
+        append("?name=")
+        append(URLEncoder.encode(fileName, "UTF-8"))
+        append("&size=")
+        append(file.size ?: 0L)
+        if (!file.mimetype.isNullOrBlank()) {
+            append("&mime=")
+            append(URLEncoder.encode(file.mimetype, "UTF-8"))
+        }
+    }
+}
+
+/** the pieces encoded into a synthetic torbox file link */
+data class TorBoxFileLink(
+    val torrentId: Int,
+    val fileId: Int,
+    val name: String?,
+    val size: Long?,
+    val mimeType: String?,
+)
+
+/**
+ * parses a link built by [torBoxFileLink] back into its components. Null when the link does not use
+ * [TORBOX_LINK_SCHEME] or the ids are missing, the metadata parameters are optional
+ */
+fun parseTorBoxFileLink(link: String): TorBoxFileLink? {
+    if (!link.startsWith(TORBOX_LINK_SCHEME)) return null
+    val trimmed = link.removePrefix(TORBOX_LINK_SCHEME)
+    val path = trimmed.substringBefore('?')
+    val torrentId = path.substringBefore('/').toIntOrNull() ?: return null
+    val fileId = path.substringAfter('/', "").toIntOrNull() ?: return null
+    var name: String? = null
+    var size: Long? = null
+    var mime: String? = null
+    trimmed.substringAfter('?', "").split('&').forEach { parameter ->
+        val value = parameter.substringAfter('=', "")
+        when (parameter.substringBefore('=')) {
+            "name" -> name = decodeOrNull(value)?.takeIf { it.isNotBlank() }
+            "size" -> size = value.toLongOrNull()
+            "mime" -> mime = decodeOrNull(value)?.takeIf { it.isNotBlank() }
+        }
+    }
+    return TorBoxFileLink(torrentId, fileId, name, size, mime)
+}
+
+private fun decodeOrNull(value: String): String? =
+    try {
+        URLDecoder.decode(value, "UTF-8")
+    } catch (e: Exception) {
+        Timber.w(e, "Could not decode torbox link parameter $value")
+        null
+    }
+
+/**
+ * builds a real debrid style [DownloadItem] for a torbox file: [downloadUrl] is the CDN url
+ * returned by requestdl, [originalLink] the synthetic link it was exchanged for. Files with a
+ * video or audio mimetype are marked streamable so the media buttons show up
+ */
+fun TorBoxFileLink.toDownloadItem(originalLink: String, downloadUrl: String): DownloadItem {
+    val streamable =
+        mimeType?.startsWith("video/") == true || mimeType?.startsWith("audio/") == true
+    return DownloadItem(
+        id = "$TORBOX_TORRENT_ID_PREFIX$torrentId-$fileId",
+        filename = name ?: "torbox file $fileId",
+        mimeType = mimeType,
+        fileSize = size ?: 0L,
+        link = originalLink,
+        host = PROVIDER_TORBOX,
+        hostIcon = null,
+        chunks = 1,
+        crc = null,
+        download = downloadUrl,
+        streamable = if (streamable) 1 else 0,
+        generated = null,
+        type = null,
+        alternative = null,
+    )
 }
 
 /** translates a torbox download_state into a real debrid torrent status */
