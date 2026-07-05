@@ -1,5 +1,6 @@
 package com.github.livingwithhippos.unchained.data.model
 
+import com.github.livingwithhippos.unchained.data.local.TorBoxDownload
 import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
 import com.github.livingwithhippos.unchained.utilities.TORBOX_BASE_URL
 import com.github.livingwithhippos.unchained.utilities.TORBOX_LINK_SCHEME
@@ -354,6 +355,41 @@ fun TorBoxWebDownload.isDownloadReady(): Boolean =
  */
 fun torBoxWebDownloadPermalink(rawApiKey: String, webId: Int, fileId: Int): String =
     "${TORBOX_BASE_URL}webdl/requestdl?token=$rawApiKey&web_id=$webId&file_id=$fileId&redirect=true"
+
+/**
+ * permalink form of torrents/requestdl, the torrent files counterpart of
+ * [torBoxWebDownloadPermalink]: every hit 302-redirects to a fresh CDN url. Same warning, the url
+ * embeds the user's raw torbox api key. The permalink dies when the torrent is deleted on torbox
+ */
+fun torBoxTorrentFilePermalink(rawApiKey: String, torrentId: Int, fileId: Int): String =
+    "${TORBOX_BASE_URL}torrents/requestdl?token=$rawApiKey&torrent_id=$torrentId&file_id=$fileId&redirect=true"
+
+/**
+ * maps a local torbox download history row to a real debrid style [DownloadItem] for the downloads
+ * tab, with the [torBoxTorrentFilePermalink] as the download url so the row carries a working url
+ * with zero extra api calls (as long as the parent torrent still exists on torbox)
+ */
+fun TorBoxDownload.toDownloadItem(rawApiKey: String): DownloadItem {
+    val streamable =
+        mimeType?.startsWith("video/") == true || mimeType?.startsWith("audio/") == true
+    val permalink = torBoxTorrentFilePermalink(rawApiKey, torrentId, fileId)
+    return DownloadItem(
+        id = id,
+        filename = filename,
+        mimeType = mimeType,
+        fileSize = size,
+        link = permalink,
+        host = PROVIDER_TORBOX,
+        hostIcon = null,
+        chunks = 1,
+        crc = null,
+        download = permalink,
+        streamable = if (streamable) 1 else 0,
+        generated = Instant.ofEpochMilli(addedDate).toString(),
+        type = null,
+        alternative = null,
+    )
+}
 
 /**
  * maps a ready torbox web download to real debrid style [DownloadItem]s, one per file, with the

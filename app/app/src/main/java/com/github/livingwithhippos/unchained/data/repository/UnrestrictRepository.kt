@@ -3,8 +3,11 @@ package com.github.livingwithhippos.unchained.data.repository
 import android.os.SystemClock
 import android.util.LruCache
 import com.github.livingwithhippos.unchained.data.local.ProtoStore
+import com.github.livingwithhippos.unchained.data.local.TorBoxDownload
+import com.github.livingwithhippos.unchained.data.local.TorBoxDownloadDao
 import com.github.livingwithhippos.unchained.data.model.DownloadItem
 import com.github.livingwithhippos.unchained.data.model.UnchainedNetworkException
+import com.github.livingwithhippos.unchained.data.model.parseTorBoxFileLink
 import com.github.livingwithhippos.unchained.data.remote.UnrestrictApiHelper
 import com.github.livingwithhippos.unchained.utilities.EitherResult
 import javax.inject.Inject
@@ -13,13 +16,17 @@ import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import timber.log.Timber
 import kotlin.time.Duration.Companion.milliseconds
 
 @Singleton
 class UnrestrictRepository
 @Inject
-constructor(protoStore: ProtoStore, private val unrestrictApiHelper: UnrestrictApiHelper) :
-    BaseRepository(protoStore) {
+constructor(
+    protoStore: ProtoStore,
+    private val unrestrictApiHelper: UnrestrictApiHelper,
+    private val torBoxDownloadDao: TorBoxDownloadDao,
+) : BaseRepository(protoStore) {
 
     private val unrestrictedLinkCache =
         LruCache<UnrestrictedLinkCacheKey, CachedUnrestrictedLink>(
@@ -35,6 +42,7 @@ constructor(protoStore: ProtoStore, private val unrestrictApiHelper: UnrestrictA
         val cacheKey = UnrestrictedLinkCacheKey(link = link, password = password, remote = remote)
 
         getCachedUnrestrictedLink(cacheKey)?.let {
+            recordTorBoxDownload(link, it)
             return EitherResult.Success(it)
         }
 
@@ -53,9 +61,38 @@ constructor(protoStore: ProtoStore, private val unrestrictApiHelper: UnrestrictA
 
         if (linkResponse is EitherResult.Success) {
             cacheUnrestrictedLink(cacheKey, linkResponse.success)
+            recordTorBoxDownload(link, linkResponse.success)
         }
 
         return linkResponse
+    }
+
+    /**
+     * torbox keeps no account side history of the files unrestricted from torrents, so every
+     * successful exchange of a synthetic torbox:// link is recorded in a local table that the
+     * downloads tab merges into its first page, mirroring the real debrid downloads history. Every
+     * torbox torrent file fetch (direct download, folder list, send to player) goes through
+     * [getEitherUnrestrictedLink], making this the single recording point. The insert is best
+     * effort: a database problem is only logged and never breaks the download itself
+     */
+    private suspend fun recordTorBoxDownload(link: String, item: DownloadItem) {
+        val torBoxLink = parseTorBoxFileLink(link) ?: return
+        try {
+            torBoxDownloadDao.upsert(
+                TorBoxDownload(
+                    id = item.id,
+                    link = link,
+                    filename = item.filename,
+                    size = item.fileSize,
+                    mimeType = item.mimeType,
+                    torrentId = torBoxLink.torrentId,
+                    fileId = torBoxLink.fileId,
+                    addedDate = System.currentTimeMillis(),
+                )
+            )
+        } catch (e: Exception) {
+            Timber.w(e, "Could not record the torbox download ${item.id} in the local history")
+        }
     }
 
     fun clearUnrestrictedLinkCache() {
