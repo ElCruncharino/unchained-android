@@ -23,8 +23,9 @@ import com.github.livingwithhippos.unchained.data.model.RepositoryPlugin
             RemoteDevice::class,
             RemoteService::class,
             CompleteRemoteService::class,
+            TorBoxDownload::class,
         ],
-    version = 10,
+    version = 11,
     exportSchema = true,
     autoMigrations =
         [
@@ -44,4 +45,6 @@ abstract class UnchaineDB : RoomDatabase() {
     abstract fun remoteDeviceDao(): RemoteDeviceDao
 
     abstract fun completeRemoteServiceDao(): CompleteRemoteServiceDao
+
+    abstract fun torBoxDownloadDao(): TorBoxDownloadDao
 }

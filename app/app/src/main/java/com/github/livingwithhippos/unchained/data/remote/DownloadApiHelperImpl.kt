@@ -1,8 +1,10 @@
 package com.github.livingwithhippos.unchained.data.remote
 
 import android.content.SharedPreferences
+import com.github.livingwithhippos.unchained.data.local.TorBoxDownloadDao
 import com.github.livingwithhippos.unchained.data.model.DownloadItem
 import com.github.livingwithhippos.unchained.data.model.TorBoxWebControlRequest
+import com.github.livingwithhippos.unchained.data.model.toDownloadItem
 import com.github.livingwithhippos.unchained.data.model.toDownloadItems
 import com.github.livingwithhippos.unchained.utilities.TORBOX_TORRENT_ID_PREFIX
 import com.github.livingwithhippos.unchained.utilities.TORBOX_WEBDL_ID_PREFIX
@@ -10,12 +12,19 @@ import javax.inject.Inject
 import retrofit2.Response
 import timber.log.Timber
 
+/**
+ * the torbox download history dao is injected into this remote helper on purpose: the merged
+ * downloads first page is assembled here (real debrid page plus torbox web downloads), and the
+ * local history rows are just one more source of that same page. Pushing the merge up to the
+ * repository would need a bigger refactoring of a layer this POC deliberately keeps untouched
+ */
 class DownloadApiHelperImpl
 @Inject
 constructor(
     private val downloadApi: DownloadApi,
     private val torBoxApi: TorBoxApi,
     private val preferences: SharedPreferences,
+    private val torBoxDownloadDao: TorBoxDownloadDao,
 ) : DownloadApiHelper {
 
     /** when the stored token is not a torbox api key the user is logged into real debrid */
@@ -94,7 +103,21 @@ constructor(
                 emptyList<DownloadItem>()
             }
 
-        return Response.success(realDebridDownloads + torBoxDownloads)
+        // local history of the torrent files fetched through requestdl (torbox keeps no account
+        // side list of those): merged newest first after the web downloads, each row carrying a
+        // torrents/requestdl redirect permalink so no extra api calls are needed. Reading the
+        // table is best effort, a database problem never drops the rest of the page
+        val torrentFileHistory =
+            try {
+                torBoxDownloadDao.getAll().map { it.toDownloadItem(rawKey) }
+            } catch (e: Exception) {
+                Timber.w(e, "Error reading the local torbox download history, skipping")
+                emptyList<DownloadItem>()
+            }
+
+        return Response.success(
+            (realDebridDownloads + torBoxDownloads + torrentFileHistory).distinctBy { it.id }
+        )
     }
 
     override suspend fun deleteDownload(token: String, id: String): Response<Unit> {
@@ -114,10 +137,19 @@ constructor(
                 Response.success(Unit)
             else torBoxErrorResponse(response.code())
         }
-        // download items minted from torbox torrent files are not persisted anywhere on the
-        // account, there is nothing to delete server side: report success instead of hitting
-        // the real debrid endpoint with a foreign id
-        if (id.startsWith(TORBOX_TORRENT_ID_PREFIX)) return Response.success(Unit)
+        // download items minted from torbox torrent files exist only in the local history table
+        // (torbox keeps no account side list of them), so deleting one removes the local row.
+        // This is also how rows whose parent torrent was deleted on torbox (dead permalinks) are
+        // cleaned up. Failures are logged but still reported as success: there is nothing to
+        // delete server side either way
+        if (id.startsWith(TORBOX_TORRENT_ID_PREFIX)) {
+            try {
+                torBoxDownloadDao.remove(id)
+            } catch (e: Exception) {
+                Timber.w(e, "Error removing the local torbox download history row $id")
+            }
+            return Response.success(Unit)
+        }
         return downloadApi.deleteDownload(token, id)
     }
 }

@@ -9,6 +9,7 @@ import com.github.livingwithhippos.unchained.data.local.HostRegexDao
 import com.github.livingwithhippos.unchained.data.local.KodiDeviceDao
 import com.github.livingwithhippos.unchained.data.local.RemoteDeviceDao
 import com.github.livingwithhippos.unchained.data.local.RepositoryDataDao
+import com.github.livingwithhippos.unchained.data.local.TorBoxDownloadDao
 import com.github.livingwithhippos.unchained.data.local.UnchaineDB
 import com.github.livingwithhippos.unchained.data.model.REGEX_TYPE_HOST
 import dagger.Module
@@ -33,6 +34,7 @@ object DatabaseModule {
                 MIGRATION_3_4,
                 MIGRATION_8_9,
                 MIGRATION_9_10,
+                MIGRATION_10_11,
             )
             .build()
     }
@@ -60,6 +62,11 @@ object DatabaseModule {
     @Provides
     fun provideCompleteServiceDao(database: UnchaineDB): CompleteRemoteServiceDao {
         return database.completeRemoteServiceDao()
+    }
+
+    @Provides
+    fun provideTorBoxDownloadDao(database: UnchaineDB): TorBoxDownloadDao {
+        return database.torBoxDownloadDao()
     }
 
     private val MIGRATION_1_2 =
@@ -101,6 +108,24 @@ object DatabaseModule {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "ALTER TABLE complete_remote_service ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1"
+                )
+            }
+        }
+
+    private val MIGRATION_10_11 =
+        object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `torbox_download` (" +
+                        "`id` TEXT NOT NULL, " +
+                        "`link` TEXT NOT NULL, " +
+                        "`filename` TEXT NOT NULL, " +
+                        "`size` INTEGER NOT NULL, " +
+                        "`mimetype` TEXT, " +
+                        "`torrent_id` INTEGER NOT NULL, " +
+                        "`file_id` INTEGER NOT NULL, " +
+                        "`added_date` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`id`))"
                 )
             }
         }
