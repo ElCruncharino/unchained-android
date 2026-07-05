@@ -39,6 +39,18 @@ const val KEY_ADD_TORRENTS_PROVIDER = "add_torrents_provider"
 const val TORBOX_TORRENT_ID_PREFIX = "tb-"
 
 /**
+ * download items mapped from torbox web downloads (hoster links) get ids shaped like
+ * tbw-[web_id]-[file_id] so the delete call can be routed back to torbox
+ */
+const val TORBOX_WEBDL_ID_PREFIX = "tbw-"
+
+/**
+ * synthetic error code (outside the real debrid range) used when a hoster link was queued on
+ * torbox but the file has not been fetched yet, mapped to a readable message in getApiErrorMessage
+ */
+const val TORBOX_ERROR_WEBDL_QUEUED = 100
+
+/**
  * scheme of the synthetic per-file links put into a torbox torrent's links list, shaped like
  * torbox://[torrent_id]/[file_id]?name=[url encoded file name]&size=[bytes]&mime=[mimetype]. The
  * unrestrict layer recognizes the scheme and exchanges the link for a fresh torbox CDN url
