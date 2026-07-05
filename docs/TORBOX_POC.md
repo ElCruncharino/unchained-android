@@ -121,9 +121,38 @@ page, the new download screen and the list adapters now know about the two servi
 - Deleting: a `tbw-` row is routed to `POST webdl/controlwebdownload` with the `delete` operation.
   TorBox has no per file entries, so deleting any file row of a multi file web download deletes
   the whole web download (all its rows). Deleting a `tb-` download row (a torrent file
-  unrestricted in phase 3) is a graceful no-op success: those items are minted on the fly and are
-  not persisted in any account side list, so there is nothing to delete server side (previously
-  this hit the Real-Debrid endpoint and reported an error).
+  unrestricted in phase 3) removes its local history row (see the parity round below): those items
+  are not persisted in any account side list, so there is nothing to delete server side
+  (previously this hit the Real-Debrid endpoint and reported an error).
+
+### Parity round: local download history for torrent files
+
+- Real-Debrid's downloads tab is a server side history of everything ever unrestricted, while
+  TorBox keeps no account side list of the files fetched from torrents (only web downloads have
+  one), so those files used to leave no trace in the downloads tab. For parity, a local Room table
+  (`torbox_download`, database version 11 with a manual `Migration` in `DatabaseModule` like the
+  previous schema bumps) records every torrent file fetch and the downloads tab lists it.
+- What is recorded and when: every successful exchange of a synthetic `torbox://` link for a CDN
+  url goes through `UnrestrictRepository.getEitherUnrestrictedLink` (the direct download, folder
+  list and send to player flows all end up there), which upserts one row keyed by the download id
+  `tb-<torrent_id>-<file_id>`: the synthetic link (it encodes name/size/mime), filename, size,
+  mimetype, torrent and file ids and a fetch timestamp. Fetching the same file again keeps a
+  single row and refreshes its timestamp (unrestrict cache hits included). The insert is best
+  effort: a database problem is only logged and never breaks the download.
+- Listing: the merged downloads first page appends the history rows, newest first, after the web
+  download rows, with a distinct-by-id pass to drop any duplicates (the `tb-`/`tbw-` prefixes
+  already keep the id spaces apart). Each row carries the `torrents/requestdl` redirect permalink
+  (`.../torrents/requestdl?token=<key>&torrent_id=<id>&file_id=<id>&redirect=true`), the torrents
+  counterpart of the webdl permalink: every hit 302-redirects to a fresh CDN url, so the rows work
+  with zero extra api calls and every existing button works untouched. Same caveat as the webdl
+  permalinks: the url embeds the raw TorBox api key, sharing the link shares the key.
+- Rows can outlive their torrent: if the torrent is later deleted on TorBox the permalink dies,
+  and no attempt is made to verify rows against the account (that would cost one api call per
+  row). Deleting the row from the downloads list or the download details screen removes it from
+  the local table, which doubles as the cleanup for rows whose torrent is gone.
+- The lists tab search filters these rows like every other merged item (the client side filename
+  filter runs after the merge) and they show the same "TorBox" source label, driven by
+  `host == "torbox"`.
 
 ### UX round: dual account user page
 
@@ -216,16 +245,20 @@ page, the new download screen and the list adapters now know about the two servi
   multi file torrents open the folder list, both backed by `torrents/requestdl` CDN URLs
 - The downloads tab shows the TorBox web downloads (one row per file) next to the Real-Debrid
   list, and pasted hoster links are queued on TorBox when it is the only active service
-- Deleting TorBox web downloads from the downloads tab or the download details screen
+- The downloads tab also shows every TorBox torrent file ever fetched from this device (local
+  history table, upserted on each fetch), with working redirect permalinks and newest first
+- Deleting TorBox web downloads from the downloads tab or the download details screen; deleting a
+  torrent file row removes it from the local history
 
 ## Known limitations / out of scope
 
 - The TorBox download rows in the downloads tab carry `requestdl` permalinks that embed the raw
   API key (see the phase 4 notes): the share and copy buttons leak the key to whoever receives
   the link.
-- Torrent files unrestricted through phase 3 (`tb-` download ids) still do not appear in the
-  downloads tab: TorBox has no account side list for them, only web downloads have one. Deleting
-  them from the download details screen is a local no-op success.
+- The torrent file history is local to the device (TorBox has no account side list for those
+  files): it starts empty on a fresh install and only grows with the fetches made from that
+  install. A history row whose torrent was deleted on TorBox keeps its (now dead) permalink until
+  the user deletes the row; the app does not verify rows against the account.
 - Hoster links queued on TorBox that are not fetched within the polling window are only visible
   once ready: the app has no screen showing pending web downloads (their rows appear in the
   downloads tab when the files are present).
