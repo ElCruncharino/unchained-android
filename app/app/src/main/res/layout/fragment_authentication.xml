@@ -199,11 +199,115 @@
             android:layout_marginTop="10dp"
             android:nextFocusLeft="@id/tfPrivateCode"
             android:nextFocusUp="@id/tfPrivateCode"
+            android:nextFocusDown="@id/tvUseTorBox"
+            android:text="@string/save"
+            app:layout_constraintBottom_toTopOf="@id/dividerTorBox"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tfPrivateCode" />
+
+        <com.google.android.material.divider.MaterialDivider
+            android:id="@+id/dividerTorBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="30dp"
+            app:layout_constraintBottom_toTopOf="@+id/tvTorBoxTitle"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/bInsertPrivate" />
+
+        <TextView
+            android:id="@+id/tvTorBoxTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="30dp"
+            android:gravity="center"
+            android:text="@string/torbox"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            app:layout_constraintBottom_toTopOf="@id/tvUseTorBox"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/dividerTorBox" />
+
+        <TextView
+            android:id="@+id/tvUseTorBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="30dp"
+            android:autoLink="web"
+            android:gravity="center"
+            android:nextFocusUp="@id/bInsertPrivate"
+            android:nextFocusDown="@id/tiTorBoxKey"
+            android:text="@string/add_torbox_key_message"
+            app:layout_constraintBottom_toTopOf="@id/tfTorBoxKey"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvTorBoxTitle" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tfTorBoxKey"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:focusable="true"
+            android:hint="@string/torbox_api_key"
+            android:importantForAutofill="no"
+            android:minWidth="200dp"
+            android:nextFocusRight="@id/bPasteTorBoxKey"
+            android:nextFocusUp="@id/tvUseTorBox"
+            android:nextFocusDown="@id/bInsertTorBox"
+            app:endIconMode="clear_text"
+            app:layout_constraintBottom_toTopOf="@id/bInsertTorBox"
+            app:layout_constraintEnd_toStartOf="@id/bPasteTorBoxKey"
+            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintStart_toStartOf="@+id/tvUseTorBox"
+            app:layout_constraintTop_toBottomOf="@id/tvUseTorBox"
+            app:layout_constraintWidth_max="600dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/tiTorBoxKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="true"
+                android:singleLine="true" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/bPasteTorBoxKey"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:nextFocusLeft="@id/tfTorBoxKey"
+            android:nextFocusRight="@id/bInsertTorBox"
+            android:nextFocusDown="@id/bInsertTorBox"
+            android:text="@string/paste"
+            app:icon="@drawable/icon_paste"
+            app:layout_constraintBottom_toBottomOf="@id/tfTorBoxKey"
+            app:layout_constraintEnd_toEndOf="@+id/tvUseTorBox"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@id/tfTorBoxKey"
+            app:layout_constraintTop_toTopOf="@id/tfTorBoxKey" />
+
+        <Button
+            android:id="@+id/bInsertTorBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            android:nextFocusLeft="@id/tfTorBoxKey"
+            android:nextFocusUp="@id/tfTorBoxKey"
             android:text="@string/save"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tfPrivateCode" />
+            app:layout_constraintTop_toBottomOf="@id/tfTorBoxKey" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

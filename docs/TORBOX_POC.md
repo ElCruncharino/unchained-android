@@ -15,11 +15,16 @@ path in the login screen.
   is present.
 - TorBox keys are UUIDs (8-4-4-4-12 hex) while Real-Debrid tokens are not, so the app detects the
   service from the token shape:
-  - Pasting a TorBox key in the private token login screen saves it to `torbox_api_key`. If
-    Real-Debrid is not logged in the key is also stored in the DataStore as the app private token,
-    so the existing authentication state machine validates it (via the TorBox `user/me`) and
-    reaches its authenticated state. If Real-Debrid is already logged in, its credentials are kept
-    and the FSM stays authenticated: both services are now active.
+  - The login screen has a native TorBox section under the Real-Debrid one (separated by a
+    divider): a short explanation linking to torbox.app/settings, a dedicated "TorBox API key"
+    field with paste and save buttons. Saving validates the UUID shape (same toast as an invalid
+    Real-Debrid token otherwise) and stores the key in `torbox_api_key`. If Real-Debrid is not
+    logged in the key is also stored in the DataStore as the app private token, so the existing
+    authentication state machine validates it (via the TorBox `user/me`) and reaches its
+    authenticated state. If Real-Debrid is already logged in, its credentials are kept and the FSM
+    stays authenticated: both services are now active.
+  - As a fallback, pasting a TorBox key in the Real-Debrid private token field is still detected
+    by its shape and goes through the same save path.
   - Pasting a Real-Debrid token (or logging in with OAuth) goes through the normal Real-Debrid
     path and never touches `torbox_api_key`.
 - Settings has a "TorBox API key" field (bound to the same preference) to add, replace or remove
@@ -120,8 +125,8 @@ path in the login screen.
 
 ## What works
 
-- Login with a TorBox API key, Real-Debrid key or OAuth, in any combination and order (TorBox
-  while Real-Debrid is active is added from settings)
+- Login with a TorBox API key (own section on the login screen), Real-Debrid key or OAuth, in any
+  combination and order (TorBox while Real-Debrid is active is added from settings)
 - User screen: the Real-Debrid account when both are active, otherwise the TorBox account
   (username from the email prefix, premium state and remaining days)
 - Merged torrents list with per-item routing, TorBox items marked with the `torbox` host
