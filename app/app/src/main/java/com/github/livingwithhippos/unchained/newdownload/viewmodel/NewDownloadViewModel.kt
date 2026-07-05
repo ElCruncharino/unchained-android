@@ -7,6 +7,7 @@ import com.github.livingwithhippos.unchained.data.model.DownloadItem
 import com.github.livingwithhippos.unchained.data.model.UnchainedNetworkException
 import com.github.livingwithhippos.unchained.data.model.UploadedTorrent
 import com.github.livingwithhippos.unchained.data.repository.HostsRepository
+import com.github.livingwithhippos.unchained.data.repository.TorBoxRepository
 import com.github.livingwithhippos.unchained.data.repository.TorrentsRepository
 import com.github.livingwithhippos.unchained.data.repository.UnrestrictRepository
 import com.github.livingwithhippos.unchained.utilities.EitherResult
@@ -27,6 +28,7 @@ constructor(
     private val unrestrictRepository: UnrestrictRepository,
     private val torrentsRepository: TorrentsRepository,
     private val hostsRepository: HostsRepository,
+    private val torBoxRepository: TorBoxRepository,
 ) : ViewModel() {
 
     // use Event since navigating back to this fragment would trigger this observable again
@@ -102,6 +104,10 @@ constructor(
             }
         }
     }
+
+    /** true when both real debrid and torbox are logged in, shows the torrent service chooser */
+    suspend fun areBothServicesActive(): Boolean =
+        torBoxRepository.isRealDebridActive() && torBoxRepository.isTorBoxActive()
 
     /**
      * This function is used to manage multiple toast spawning from different parts of the logic to

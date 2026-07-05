@@ -3,6 +3,7 @@ package com.github.livingwithhippos.unchained.newdownload.view
 import android.annotation.SuppressLint
 import android.content.ContentResolver.SCHEME_CONTENT
 import android.content.ContentResolver.SCHEME_FILE
+import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -13,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.edit
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -30,6 +32,10 @@ import com.github.livingwithhippos.unchained.statemachine.authentication.FSMAuth
 import com.github.livingwithhippos.unchained.statemachine.authentication.FSMAuthenticationState
 import com.github.livingwithhippos.unchained.utilities.CONTAINER_EXTENSION_PATTERN
 import com.github.livingwithhippos.unchained.utilities.EventObserver
+import com.github.livingwithhippos.unchained.utilities.KEY_ADD_TORRENTS_PROVIDER
+import com.github.livingwithhippos.unchained.utilities.PROVIDER_BOTH
+import com.github.livingwithhippos.unchained.utilities.PROVIDER_REAL_DEBRID
+import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
 import com.github.livingwithhippos.unchained.utilities.REMOTE_TRAFFIC_ON
 import com.github.livingwithhippos.unchained.utilities.SCHEME_HTTP
 import com.github.livingwithhippos.unchained.utilities.SCHEME_HTTPS
@@ -45,6 +51,7 @@ import com.github.livingwithhippos.unchained.utilities.extension.isTorrent
 import com.github.livingwithhippos.unchained.utilities.extension.isWebUrl
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.IOException
+import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -56,6 +63,8 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 @AndroidEntryPoint
 class NewDownloadFragment : UnchainedFragment() {
+
+    @Inject lateinit var preferences: SharedPreferences
 
     // if we receive an intent and new download is already selected and showing a
     // DownloadDetailsFragment, it may not trigger the observers in this class
@@ -75,9 +84,56 @@ class NewDownloadFragment : UnchainedFragment() {
 
         setupObservers(binding)
         setupClickListeners(binding)
+        setupServiceChooser(binding)
         setupArgs(binding)
 
         return binding.root
+    }
+
+    /**
+     * the per-add torrent service chooser, shown only when both real debrid and torbox are logged
+     * in. The selection is written back to [KEY_ADD_TORRENTS_PROVIDER] as soon as it is made, so
+     * the api helper routing the add torrent calls picks it up without any signature change and
+     * the settings dropdown stays in sync
+     */
+    private fun setupServiceChooser(binding: NewDownloadFragmentBinding) {
+        lifecycleScope.launch {
+            if (!viewModel.areBothServicesActive()) return@launch
+            if (_binding == null) return@launch
+
+            val checkedButton =
+                when (preferences.getString(KEY_ADD_TORRENTS_PROVIDER, PROVIDER_REAL_DEBRID)) {
+                    PROVIDER_TORBOX -> R.id.bServiceTorBox
+                    PROVIDER_BOTH -> R.id.bServiceBoth
+                    else -> R.id.bServiceRealDebrid
+                }
+            binding.tgTorrentService.check(checkedButton)
+            binding.tgTorrentService.addOnButtonCheckedListener { _, checkedId, isChecked ->
+                if (isChecked) {
+                    val provider =
+                        when (checkedId) {
+                            R.id.bServiceTorBox -> PROVIDER_TORBOX
+                            R.id.bServiceBoth -> PROVIDER_BOTH
+                            else -> PROVIDER_REAL_DEBRID
+                        }
+                    preferences.edit { putString(KEY_ADD_TORRENTS_PROVIDER, provider) }
+                }
+            }
+            binding.tvTorrentService.visibility = View.VISIBLE
+            binding.tgTorrentService.visibility = View.VISIBLE
+        }
+    }
+
+    /**
+     * when the chooser is on "Both" the app can only follow the real debrid upload, tell the user
+     * the torrent is also sent to torbox in the background
+     */
+    private fun notifyTorBoxCopy(binding: NewDownloadFragmentBinding) {
+        if (
+            binding.tgTorrentService.visibility == View.VISIBLE &&
+                binding.tgTorrentService.checkedButtonId == R.id.bServiceBoth
+        )
+            viewModel.postMessage(getString(R.string.torrent_also_sent_torbox))
     }
 
     override fun onDestroyView() {
@@ -297,6 +353,7 @@ class NewDownloadFragment : UnchainedFragment() {
                     when {
                         // this must be before the link.isWebUrl() check or it won't trigger
                         link.isTorrent() -> {
+                            notifyTorBoxCopy(binding)
                             val action =
                                 NewDownloadFragmentDirections
                                     .actionNewDownloadFragmentToTorrentProcessingFragment(
@@ -320,6 +377,7 @@ class NewDownloadFragment : UnchainedFragment() {
                             // this one must stay above link.isWebUrl() || link.isSimpleWebUrl()
                             // because some magnets have http in their link, getting recognized as
                             // urls
+                            notifyTorBoxCopy(binding)
                             val action =
                                 NewDownloadFragmentDirections
                                     .actionNewDownloadFragmentToTorrentProcessingFragment(
@@ -526,6 +584,7 @@ class NewDownloadFragment : UnchainedFragment() {
         // https://developer.android.com/training/data-storage/shared/documents-files#open
         try {
             viewModel.postMessage(getString(R.string.loading_torrent_file))
+            notifyTorBoxCopy(binding)
             requireContext().contentResolver.openInputStream(uri)?.use { inputStream ->
                 val buffer: ByteArray = inputStream.readBytes()
                 viewModel.fetchUploadedTorrent(buffer)
