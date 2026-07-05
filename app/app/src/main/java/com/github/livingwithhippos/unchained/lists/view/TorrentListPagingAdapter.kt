@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.github.livingwithhippos.unchained.R
 import com.github.livingwithhippos.unchained.data.model.TorrentItem
 import com.github.livingwithhippos.unchained.databinding.ItemListTorrentBinding
+import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
 import com.github.livingwithhippos.unchained.utilities.extension.getFileSizeString
 import com.github.livingwithhippos.unchained.utilities.extension.getStatusTranslation
 
@@ -70,10 +71,17 @@ class TorrentViewHolder(
         mItem = item
         binding.selectionIndicator.visibility = if (selected) View.VISIBLE else View.GONE
 
-        if (item.status == "downloaded") {
-            // "ready" is used to make it clearer that the torrent is NOT downloaded on the phone
-            binding.tvTitle.text = binding.root.context.getStatusTranslation("ready")
-        } else binding.tvTitle.text = binding.root.context.getStatusTranslation(item.status)
+        val status =
+            if (item.status == "downloaded") {
+                // "ready" is used to make it clearer that the torrent is NOT downloaded on the
+                // phone
+                binding.root.context.getStatusTranslation("ready")
+            } else binding.root.context.getStatusTranslation(item.status)
+        // make the source service of the merged rows obvious at a glance
+        binding.tvTitle.text =
+            if (item.host == PROVIDER_TORBOX)
+                itemView.context.getString(R.string.torbox_list_label_format, status)
+            else status
         if (item.progress >= 0 && item.progress < 100) {
             binding.tvProgress.text =
                 itemView.context.getString(R.string.percent_format, item.progress)
