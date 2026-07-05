@@ -220,6 +220,14 @@
             android:summary="@string/torbox_api_key_summary"
             android:title="@string/torbox_api_key" />
 
+        <DropDownPreference
+            android:defaultValue="real_debrid"
+            android:entries="@array/add_torrents_service"
+            android:entryValues="@array/add_torrents_service_values"
+            android:key="add_torrents_provider"
+            android:title="@string/add_torrents_service"
+            app:useSimpleSummaryProvider="true" />
+
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/title_various">

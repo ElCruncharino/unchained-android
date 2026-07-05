@@ -32,6 +32,45 @@ data class TorBoxTorrentListResponse(
 )
 
 @JsonClass(generateAdapter = true)
+data class TorBoxTorrentResponse(
+    @param:Json(name = "success") val success: Boolean,
+    @param:Json(name = "error") val error: String?,
+    @param:Json(name = "detail") val detail: String?,
+    @param:Json(name = "data") val data: TorBoxTorrent?,
+)
+
+@JsonClass(generateAdapter = true)
+data class TorBoxCreateTorrentResponse(
+    @param:Json(name = "success") val success: Boolean,
+    @param:Json(name = "error") val error: String?,
+    @param:Json(name = "detail") val detail: String?,
+    @param:Json(name = "data") val data: TorBoxCreatedTorrent?,
+)
+
+@JsonClass(generateAdapter = true)
+data class TorBoxCreatedTorrent(
+    @param:Json(name = "torrent_id") val torrentId: Int?,
+    // torrents over the plan active limit only get a queued_id and cannot be followed
+    @param:Json(name = "queued_id") val queuedId: Int?,
+    @param:Json(name = "hash") val hash: String?,
+    @param:Json(name = "name") val name: String?,
+)
+
+/** body of the controltorrent call, the operation is a string like "delete" */
+@JsonClass(generateAdapter = true)
+data class TorBoxControlRequest(
+    @param:Json(name = "torrent_id") val torrentId: Int,
+    @param:Json(name = "operation") val operation: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class TorBoxControlResponse(
+    @param:Json(name = "success") val success: Boolean,
+    @param:Json(name = "error") val error: String?,
+    @param:Json(name = "detail") val detail: String?,
+)
+
+@JsonClass(generateAdapter = true)
 data class TorBoxUser(
     @param:Json(name = "id") val id: Int,
     @param:Json(name = "email") val email: String?,
@@ -128,6 +167,16 @@ fun TorBoxTorrent.toTorrentItem(): TorrentItem {
         speed = downloadSpeed?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt(),
         seeders = seeds,
     )
+}
+
+/**
+ * maps a createtorrent result to the real debrid [UploadedTorrent] model. Null when torbox only
+ * queued the torrent (no torrent_id), since a queued torrent cannot be followed by the app flow
+ */
+fun TorBoxCreatedTorrent.toUploadedTorrent(): UploadedTorrent? {
+    val newId = torrentId ?: return null
+    // the app only uses the uri field for logging, pass the hash through
+    return UploadedTorrent(id = TORBOX_TORRENT_ID_PREFIX + newId, uri = hash ?: "")
 }
 
 /** translates a torbox download_state into a real debrid torrent status */

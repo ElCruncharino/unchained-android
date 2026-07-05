@@ -2,13 +2,21 @@ package com.github.livingwithhippos.unchained.data.remote
 
 import android.content.SharedPreferences
 import com.github.livingwithhippos.unchained.data.model.AvailableHost
+import com.github.livingwithhippos.unchained.data.model.TorBoxControlRequest
+import com.github.livingwithhippos.unchained.data.model.TorBoxCreateTorrentResponse
 import com.github.livingwithhippos.unchained.data.model.TorrentItem
 import com.github.livingwithhippos.unchained.data.model.UploadedTorrent
 import com.github.livingwithhippos.unchained.data.model.toTorrentItem
+import com.github.livingwithhippos.unchained.data.model.toUploadedTorrent
+import com.github.livingwithhippos.unchained.utilities.KEY_ADD_TORRENTS_PROVIDER
+import com.github.livingwithhippos.unchained.utilities.PROVIDER_REAL_DEBRID
 import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
 import com.github.livingwithhippos.unchained.utilities.TORBOX_TORRENT_ID_PREFIX
 import javax.inject.Inject
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
 import timber.log.Timber
 
@@ -42,25 +50,61 @@ constructor(
         // torbox has no hosts concept but the add torrent flows need a non empty list
         else Response.success(listOf(AvailableHost(host = PROVIDER_TORBOX, maxFileSize = 0)))
 
-    override suspend fun getTorrentInfo(token: String, id: String): Response<TorrentItem> =
-        if (id.startsWith(TORBOX_TORRENT_ID_PREFIX)) torBoxErrorResponse(501)
-        else torrentsApi.getTorrentInfo(token, id)
+    /**
+     * true when a new torrent should be sent to torbox instead of real debrid: torbox is the only
+     * active service, or both are active and the user picked torbox in the settings
+     */
+    private fun addToTorBox(token: String): Boolean {
+        if (torBoxAuth(token) == null) return false
+        if (!isRealDebridActive(token)) return true
+        return preferences.getString(KEY_ADD_TORRENTS_PROVIDER, PROVIDER_REAL_DEBRID) ==
+            PROVIDER_TORBOX
+    }
+
+    override suspend fun getTorrentInfo(token: String, id: String): Response<TorrentItem> {
+        if (!id.startsWith(TORBOX_TORRENT_ID_PREFIX)) return torrentsApi.getTorrentInfo(token, id)
+        val auth = torBoxAuth(token) ?: return torBoxErrorResponse(401)
+        val response = torBoxApi.getTorrent(auth, id = id.removePrefix(TORBOX_TORRENT_ID_PREFIX))
+        val torrent = response.body()?.data
+        return if (response.isSuccessful && torrent != null)
+            Response.success(torrent.toTorrentItem())
+        else torBoxErrorResponse(response.code())
+    }
 
     override suspend fun addTorrent(
         token: String,
         binaryTorrent: RequestBody,
         host: String,
-    ): Response<UploadedTorrent> =
-        if (isRealDebridActive(token)) torrentsApi.addTorrent(token, binaryTorrent, host)
-        else torBoxErrorResponse(501)
+    ): Response<UploadedTorrent> {
+        if (!addToTorBox(token)) return torrentsApi.addTorrent(token, binaryTorrent, host)
+        val auth = torBoxAuth(token) ?: return torBoxErrorResponse(401)
+        val filePart = MultipartBody.Part.createFormData("file", "upload.torrent", binaryTorrent)
+        return mapCreatedTorrent(torBoxApi.createTorrentFromFile(auth, filePart))
+    }
 
     override suspend fun addMagnet(
         token: String,
         magnet: String,
         host: String,
-    ): Response<UploadedTorrent> =
-        if (isRealDebridActive(token)) torrentsApi.addMagnet(token, magnet, host)
-        else torBoxErrorResponse(501)
+    ): Response<UploadedTorrent> {
+        if (!addToTorBox(token)) return torrentsApi.addMagnet(token, magnet, host)
+        val auth = torBoxAuth(token) ?: return torBoxErrorResponse(401)
+        val magnetPart = magnet.toRequestBody("text/plain".toMediaTypeOrNull())
+        return mapCreatedTorrent(torBoxApi.createTorrentFromMagnet(auth, magnetPart))
+    }
+
+    private fun mapCreatedTorrent(
+        response: Response<TorBoxCreateTorrentResponse>
+    ): Response<UploadedTorrent> {
+        if (!response.isSuccessful) return torBoxErrorResponse(response.code())
+        val uploaded = response.body()?.data?.toUploadedTorrent()
+        if (uploaded == null) {
+            // either an unexpected body or a torrent that was only queued by torbox
+            Timber.w("createtorrent did not return a torrent id: ${response.body()?.detail}")
+            return torBoxErrorResponse(500)
+        }
+        return Response.success(uploaded)
+    }
 
     override suspend fun getTorrentsList(
         token: String,
@@ -116,12 +160,24 @@ constructor(
         if (id.startsWith(TORBOX_TORRENT_ID_PREFIX)) Response.success(Unit)
         else torrentsApi.selectFiles(token, id, files)
 
-    override suspend fun deleteTorrent(token: String, id: String): Response<Unit> =
-        if (id.startsWith(TORBOX_TORRENT_ID_PREFIX)) torBoxErrorResponse(501)
-        else torrentsApi.deleteTorrent(token, id)
+    override suspend fun deleteTorrent(token: String, id: String): Response<Unit> {
+        if (!id.startsWith(TORBOX_TORRENT_ID_PREFIX)) return torrentsApi.deleteTorrent(token, id)
+        val auth = torBoxAuth(token) ?: return torBoxErrorResponse(401)
+        val torrentId =
+            id.removePrefix(TORBOX_TORRENT_ID_PREFIX).toIntOrNull()
+                ?: return torBoxErrorResponse(400)
+        val response =
+            torBoxApi.controlTorrent(auth, TorBoxControlRequest(torrentId, OPERATION_DELETE))
+        return if (response.isSuccessful && response.body()?.success == true)
+            Response.success(Unit)
+        else torBoxErrorResponse(response.code())
+    }
 
     companion object {
         /** torbox caps the list endpoint at 1000 items */
         const val TORBOX_LIST_LIMIT = 1000
+
+        /** controltorrent operation removing a torrent */
+        const val OPERATION_DELETE = "delete"
     }
 }
