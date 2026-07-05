@@ -211,6 +211,17 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/debrid_services">
+
+        <EditTextPreference
+            android:key="torbox_api_key"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:summary="@string/torbox_api_key_summary"
+            android:title="@string/torbox_api_key" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/title_various">
 
         <Preference

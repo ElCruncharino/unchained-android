@@ -53,11 +53,9 @@ import com.github.livingwithhippos.unchained.statemachine.authentication.FSMAuth
 import com.github.livingwithhippos.unchained.statemachine.authentication.FSMAuthenticationState
 import com.github.livingwithhippos.unchained.utilities.EitherResult
 import com.github.livingwithhippos.unchained.utilities.Event
-import com.github.livingwithhippos.unchained.utilities.KEY_CURRENT_DEBRID_PROVIDER
+import com.github.livingwithhippos.unchained.utilities.KEY_TORBOX_API_KEY
 import com.github.livingwithhippos.unchained.utilities.MAGNET_PATTERN
 import com.github.livingwithhippos.unchained.utilities.PRIVATE_TOKEN
-import com.github.livingwithhippos.unchained.utilities.PROVIDER_REAL_DEBRID
-import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
 import com.github.livingwithhippos.unchained.utilities.PreferenceKeys
 import com.github.livingwithhippos.unchained.utilities.TORBOX_API_KEY_PATTERN
 import com.github.livingwithhippos.unchained.utilities.SIGNATURE
@@ -388,6 +386,16 @@ constructor(
                     FSMAuthenticationSideEffect.ResetAuthentication -> {
                         // delete the current credentials and restart a login process
                         viewModelScope.launch {
+                            // when the rejected login token is the torbox api key itself do not
+                            // keep it active
+                            val accessToken: String? = protoStore.getCredentials().accessToken
+                            if (
+                                !accessToken.isNullOrBlank() &&
+                                    accessToken ==
+                                        preferences.getString(KEY_TORBOX_API_KEY, null)?.trim()
+                            ) {
+                                preferences.edit { remove(KEY_TORBOX_API_KEY) }
+                            }
                             protoStore.deleteCredentials()
                             fsmAuthenticationState.postValue(
                                 Event(FSMAuthenticationState.StartNewLogin)
@@ -788,15 +796,32 @@ constructor(
     }
 
     /**
-     * detects the debrid service from a pasted private token: torbox api keys are uuids while real
-     * debrid tokens are not. The provider flag is used to route the api calls
+     * Saves a pasted torbox api key. The key always goes to its own preference. When real debrid
+     * is not logged in the key is also stored as the app private token so the existing
+     * authentication flow can validate it and reach an authenticated state. When real debrid is
+     * already logged in its credentials are kept untouched and the state machine stays
+     * authenticated: both services are active at the same time
      */
-    fun updateDebridProvider(token: String) {
-        val provider =
-            if (token.matches(TORBOX_API_KEY_PATTERN.toRegex())) PROVIDER_TORBOX
-            else PROVIDER_REAL_DEBRID
-        Timber.d("Setting debrid provider to $provider")
-        preferences.edit { putString(KEY_CURRENT_DEBRID_PROVIDER, provider) }
+    fun saveTorBoxApiKey(key: String) {
+        preferences.edit { putString(KEY_TORBOX_API_KEY, key) }
+        viewModelScope.launch {
+            val accessToken: String? = protoStore.getCredentials().accessToken
+            val realDebridLoggedIn =
+                !accessToken.isNullOrBlank() &&
+                    !accessToken.matches(TORBOX_API_KEY_PATTERN.toRegex())
+            if (realDebridLoggedIn) {
+                Timber.d("TorBox api key saved next to the real debrid credentials")
+            } else {
+                protoStore.setCredentials(
+                    deviceCode = PRIVATE_TOKEN,
+                    clientId = PRIVATE_TOKEN,
+                    clientSecret = PRIVATE_TOKEN,
+                    accessToken = key,
+                    refreshToken = PRIVATE_TOKEN,
+                )
+                transitionAuthenticationMachine(FSMAuthenticationEvent.OnPrivateToken)
+            }
+        }
     }
 
     fun updateCredentialsDeviceCode(deviceCode: String) {

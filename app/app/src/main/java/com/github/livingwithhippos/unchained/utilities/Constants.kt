@@ -23,9 +23,14 @@ const val PRIVATE_TOKEN: String = "private_token"
 
 // torbox proof of concept stuff
 const val TORBOX_BASE_URL = "https://api.torbox.app/v1/api/"
-const val KEY_CURRENT_DEBRID_PROVIDER = "current_debrid_provider"
 const val PROVIDER_REAL_DEBRID = "real_debrid"
 const val PROVIDER_TORBOX = "torbox"
+
+/** the torbox api key is stored on its own so both services can be logged in at the same time */
+const val KEY_TORBOX_API_KEY = "torbox_api_key"
+
+/** mapped torbox torrent ids are prefixed with this so every api call can be routed by id */
+const val TORBOX_TORRENT_ID_PREFIX = "tb-"
 
 // torbox api keys are uuids while real debrid private tokens are not
 const val TORBOX_API_KEY_PATTERN =

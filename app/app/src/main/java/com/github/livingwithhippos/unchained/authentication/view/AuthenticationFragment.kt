@@ -237,8 +237,6 @@ class AuthenticationFragment : UnchainedFragment() {
                 if (token != null) {
                     binding.cbToken.isChecked = true
                     binding.cbToken.text = getString(R.string.obtained_token)
-                    // oauth tokens are always real debrid, reset the provider flag
-                    activityViewModel.updateDebridProvider(token.accessToken)
                     // update the current credentials
                     activityViewModel.updateCredentialsAccessToken(token.accessToken)
                     activityViewModel.updateCredentialsRefreshToken(token.refreshToken)
@@ -283,21 +281,27 @@ class AuthenticationFragment : UnchainedFragment() {
 
     fun onSaveCodeClick(codeInputField: TextInputEditText) {
         val token: String = codeInputField.text.toString().trim()
-        val isTorBoxKey = token.matches(TORBOX_API_KEY_PATTERN.toRegex())
-        // real debrid tokens are around 52 characters, torbox api keys are 36 characters uuids
-        if (token.length < 40 && !isTorBoxKey) context?.showToast(R.string.invalid_token)
-        else {
-            // set the provider so the api calls are routed to the right service
-            activityViewModel.updateDebridProvider(token)
-            // pass the value to be checked and eventually saved
-            activityViewModel.updateCredentials(
-                accessToken = token,
-                clientId = PRIVATE_TOKEN,
-                clientSecret = PRIVATE_TOKEN,
-                deviceCode = PRIVATE_TOKEN,
-                refreshToken = PRIVATE_TOKEN,
-            )
-            activityViewModel.transitionAuthenticationMachine(FSMAuthenticationEvent.OnPrivateToken)
+        when {
+            // torbox api keys are 36 characters uuids. The key is saved on its own and any real
+            // debrid credentials are kept, so both services can be active at the same time
+            token.matches(TORBOX_API_KEY_PATTERN.toRegex()) -> {
+                activityViewModel.saveTorBoxApiKey(token)
+            }
+            // real debrid tokens are around 52 characters
+            token.length < 40 -> context?.showToast(R.string.invalid_token)
+            else -> {
+                // pass the value to be checked and eventually saved
+                activityViewModel.updateCredentials(
+                    accessToken = token,
+                    clientId = PRIVATE_TOKEN,
+                    clientSecret = PRIVATE_TOKEN,
+                    deviceCode = PRIVATE_TOKEN,
+                    refreshToken = PRIVATE_TOKEN,
+                )
+                activityViewModel.transitionAuthenticationMachine(
+                    FSMAuthenticationEvent.OnPrivateToken
+                )
+            }
         }
     }
 

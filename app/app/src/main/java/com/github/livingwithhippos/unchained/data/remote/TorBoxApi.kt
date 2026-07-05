@@ -3,9 +3,8 @@ package com.github.livingwithhippos.unchained.data.remote
 import android.content.SharedPreferences
 import com.github.livingwithhippos.unchained.data.model.TorBoxTorrentListResponse
 import com.github.livingwithhippos.unchained.data.model.TorBoxUserResponse
-import com.github.livingwithhippos.unchained.utilities.KEY_CURRENT_DEBRID_PROVIDER
-import com.github.livingwithhippos.unchained.utilities.PROVIDER_REAL_DEBRID
-import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
+import com.github.livingwithhippos.unchained.utilities.KEY_TORBOX_API_KEY
+import com.github.livingwithhippos.unchained.utilities.TORBOX_API_KEY_PATTERN
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Response
@@ -28,9 +27,18 @@ interface TorBoxApi {
     ): Response<TorBoxTorrentListResponse>
 }
 
-/** true when the user logged in with a torbox api key instead of a real debrid token */
-fun SharedPreferences.isTorBoxProvider(): Boolean =
-    getString(KEY_CURRENT_DEBRID_PROVIDER, PROVIDER_REAL_DEBRID) == PROVIDER_TORBOX
+private val torBoxKeyRegex = TORBOX_API_KEY_PATTERN.toRegex()
+
+/** the torbox api key saved on its own, null when the torbox account is not active */
+fun SharedPreferences.torBoxApiKey(): String? =
+    getString(KEY_TORBOX_API_KEY, null)?.trim()?.takeIf { it.isNotEmpty() }
+
+/**
+ * true when a token (with or without the "Bearer " prefix) is shaped like a torbox api key (a
+ * uuid). Real debrid tokens never look like this, so this is used to route calls per token
+ */
+fun isTorBoxApiKey(token: String): Boolean =
+    token.removePrefix("Bearer").trim().matches(torBoxKeyRegex)
 
 /**
  * builds a real debrid style error response from a torbox error so the existing error parsing keeps

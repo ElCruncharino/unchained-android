@@ -16,6 +16,9 @@ import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Comp
 import com.github.livingwithhippos.unchained.settings.view.ThemeItem
 import com.github.livingwithhippos.unchained.start.viewmodel.MainActivityViewModel.Companion.KEY_DOWNLOAD_FOLDER
 import com.github.livingwithhippos.unchained.utilities.Event
+import com.github.livingwithhippos.unchained.utilities.KEY_TORBOX_API_KEY
+import com.github.livingwithhippos.unchained.utilities.PRIVATE_TOKEN
+import com.github.livingwithhippos.unchained.utilities.TORBOX_API_KEY_PATTERN
 import com.github.livingwithhippos.unchained.utilities.postEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -66,11 +69,40 @@ constructor(
     fun userLogout() {
         viewModelScope.launch {
             val credentials = protoStore.getCredentials()
-            if (credentials.accessToken.isBlank() && credentials.clientId.isBlank()) {
+            val hasTorBoxKey = !preferences.getString(KEY_TORBOX_API_KEY, null).isNullOrBlank()
+            if (
+                credentials.accessToken.isBlank() && credentials.clientId.isBlank() && !hasTorBoxKey
+            ) {
                 eventLiveData.postEvent(SettingEvent.LogoutNoCredentials)
             } else {
+                // remove the credentials of both services
+                preferences.edit { remove(KEY_TORBOX_API_KEY) }
                 protoStore.deleteCredentials()
                 eventLiveData.postEvent(SettingEvent.Logout)
+            }
+        }
+    }
+
+    /**
+     * called when the torbox api key preference changes: when torbox is also the main app login
+     * (no real debrid credentials) the single credentials storage is kept in sync so the
+     * authentication flow keeps working with the new key
+     */
+    fun updateTorBoxApiKey(key: String) {
+        viewModelScope.launch {
+            if (key.isBlank()) return@launch
+            val accessToken: String? = protoStore.getCredentials().accessToken
+            if (
+                accessToken.isNullOrBlank() ||
+                    accessToken.matches(TORBOX_API_KEY_PATTERN.toRegex())
+            ) {
+                protoStore.setCredentials(
+                    deviceCode = PRIVATE_TOKEN,
+                    clientId = PRIVATE_TOKEN,
+                    clientSecret = PRIVATE_TOKEN,
+                    accessToken = key,
+                    refreshToken = PRIVATE_TOKEN,
+                )
             }
         }
     }
