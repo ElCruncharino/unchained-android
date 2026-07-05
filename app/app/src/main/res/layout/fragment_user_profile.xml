@@ -160,6 +160,19 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvRdService" />
 
+                <Button
+                    android:id="@+id/bRdConnect"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:minWidth="170dp"
+                    android:text="@string/connect"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvRdNotConnected" />
+
                 <androidx.constraintlayout.widget.Group
                     android:id="@+id/groupRdConnected"
                     android:layout_width="wrap_content"
@@ -276,6 +289,19 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvTbService" />
+
+                <Button
+                    android:id="@+id/bTbConnect"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:minWidth="170dp"
+                    android:text="@string/connect"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvTbNotConnected" />
 
                 <androidx.constraintlayout.widget.Group
                     android:id="@+id/groupTbConnected"
