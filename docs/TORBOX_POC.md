@@ -1,6 +1,6 @@
 # TorBox proof of concept
 
-Phases 1, 2 and 3 of a TorBox integration. The goal is to show that TorBox support fits the existing
+Phases 1 to 4 of a TorBox integration. The goal is to show that TorBox support fits the existing
 architecture without a rewrite: everything above the `*ApiHelperImpl` layer (helper interfaces,
 repositories, viewmodels, fragments) is untouched, except for a settings entry and the token save
 path in the login screen.
@@ -84,6 +84,40 @@ path in the login screen.
   use so this rarely matters, and the unrestrict cache TTL (2 hours) is below the validity window.
   Only links copied/shared and used much later can expire; unrestricting again mints a fresh one.
 
+### Web downloads / hosters and the downloads tab (phase 4)
+
+- The downloads tab mirrors the merged torrents list: the Real-Debrid downloads page as usual,
+  plus the whole TorBox web downloads list (`webdl/mylist`, up to 1000 items, fetched only with
+  the first page) appended to it. A TorBox failure never drops the Real-Debrid page, TorBox-only
+  accounts get just the TorBox list, and non-first pages are unchanged.
+- A TorBox web download becomes one download row per file (a multi file web download expands into
+  several rows), id `tbw-<web_id>-<file_id>`, host `torbox`. Web downloads still being fetched by
+  TorBox map to no rows until they are ready (`download_present`/`download_finished`).
+- Permalink instead of on-demand minting: clicking a row in the downloads tab navigates straight
+  to the download details screen with the mapped item, there is no unrestrict step in that flow,
+  so `DownloadItem.download` must already be a working URL at list mapping time. Each row
+  therefore carries the `webdl/requestdl` redirect permalink
+  (`.../webdl/requestdl?token=<key>&web_id=<id>&file_id=<id>&redirect=true`, confirmed against the
+  OpenAPI spec), which 302-redirects to a fresh CDN URL on every hit, so no extra API calls are
+  needed and every existing button (download, players, open, copy, share) works untouched.
+  CAVEAT: the permalink embeds the user's raw TorBox API key (the endpoint has no other
+  authentication), so sharing or copying a TorBox download link from the app shares the API key.
+  A synthetic-link-plus-minting scheme like phase 3 would avoid that but would require touching
+  the details fragment, which this POC deliberately avoids.
+- Pasting a hoster link in the new download screen: when Real-Debrid is active it keeps handling
+  the link (its unrestrict is instant, the better experience). When only TorBox is active the link
+  is queued with `POST webdl/createwebdownload` and `webdl/mylist?id=` is polled for ~15 seconds
+  (3 second interval): if TorBox fetches the file in time the first file is unrestricted through
+  `webdl/requestdl` and the flow continues exactly like a Real-Debrid unrestrict; if it is still
+  fetching, a synthetic error code (100, outside the Real-Debrid range) surfaces as a readable
+  toast telling the user the download was queued and will appear in the downloads list later.
+- Deleting: a `tbw-` row is routed to `POST webdl/controlwebdownload` with the `delete` operation.
+  TorBox has no per file entries, so deleting any file row of a multi file web download deletes
+  the whole web download (all its rows). Deleting a `tb-` download row (a torrent file
+  unrestricted in phase 3) is a graceful no-op success: those items are minted on the fly and are
+  not persisted in any account side list, so there is nothing to delete server side (previously
+  this hit the Real-Debrid endpoint and reported an error).
+
 ## What works
 
 - Login with a TorBox API key, Real-Debrid key or OAuth, in any combination and order (TorBox
@@ -96,14 +130,26 @@ path in the login screen.
 - Deleting TorBox torrents, torrent details for `tb-` ids (mapped from `mylist?id=`)
 - Downloading TorBox files: single file torrents go straight to the download details screen,
   multi file torrents open the folder list, both backed by `torrents/requestdl` CDN URLs
+- The downloads tab shows the TorBox web downloads (one row per file) next to the Real-Debrid
+  list, and pasted hoster links are queued on TorBox when it is the only active service
+- Deleting TorBox web downloads from the downloads tab or the download details screen
 
 ## Known limitations / out of scope
 
-- Phase 4: web downloads / hosters via the TorBox `webdl` endpoints.
-- TorBox downloads are not persisted anywhere: Real-Debrid keeps an account side downloads list
-  (unrestricting adds to it, the downloads tab reads it), TorBox has nothing equivalent, so
-  unrestricted TorBox files never appear in the downloads tab and the delete button on their
-  download details screen hits the Real-Debrid endpoint and just reports an error.
+- The TorBox download rows in the downloads tab carry `requestdl` permalinks that embed the raw
+  API key (see the phase 4 notes): the share and copy buttons leak the key to whoever receives
+  the link.
+- Torrent files unrestricted through phase 3 (`tb-` download ids) still do not appear in the
+  downloads tab: TorBox has no account side list for them, only web downloads have one. Deleting
+  them from the download details screen is a local no-op success.
+- Hoster links queued on TorBox that are not fetched within the polling window are only visible
+  once ready: the app has no screen showing pending web downloads (their rows appear in the
+  downloads tab when the files are present).
+- The whole web download zip link (`webdl/requestdl` with `zip_link=true`) is not wired, same as
+  the torrents one.
+- The `createwebdownload` response id field name (`webdownload_id`) is not spelled out in the
+  OpenAPI spec (the response schema is empty); the mapper parses both `webdownload_id` and `id`
+  defensively.
 - The transcoded streams button ("load streams") stays disabled for TorBox items (they carry no
   alternative streams), matching how it behaves for Real-Debrid users without streaming support;
   if it were somehow triggered the RD streaming call fails and is logged without UI effect. The
@@ -115,9 +161,10 @@ path in the login screen.
   account info is not displayed anywhere in that case.
 - The list filter (e.g. active torrents) is only applied to the Real-Debrid page; the appended
   TorBox items are always the full list.
-- TorBox torrents are only merged into the first page, so they all load at once (TorBox caps the
-  endpoint at 1000 items anyway).
+- TorBox torrents and web downloads are only merged into the first page, so they all load at once
+  (TorBox caps both endpoints at 1000 items anyway).
 - Setting the TorBox key from settings while completely logged out stores the key, but the login
   screen still expects a token paste to authenticate the app itself.
 - None of this has been exercised against live accounts; the mapping (including the exact
-  `requestdl` response shape) is based on the public API documentation with defensive parsing.
+  `requestdl` response shapes and the `createwebdownload` result) is based on the public API
+  documentation and the OpenAPI spec with defensive parsing.
