@@ -790,4 +790,5 @@
     <string name="torbox_account_error">Could not load the TorBox account details. Check the API key or try again later.</string>
     <string name="both">Both</string>
     <string name="torrent_also_sent_torbox">Also sending the torrent to TorBox</string>
+    <string name="torbox_list_label_format" translatable="false">TorBox · %1$s</string>
 </resources>

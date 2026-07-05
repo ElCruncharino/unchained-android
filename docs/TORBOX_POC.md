@@ -1,9 +1,11 @@
 # TorBox proof of concept
 
-Phases 1 to 4 of a TorBox integration. The goal is to show that TorBox support fits the existing
-architecture without a rewrite: everything above the `*ApiHelperImpl` layer (helper interfaces,
-repositories, viewmodels, fragments) is untouched, except for a settings entry and the token save
-path in the login screen.
+Phases 1 to 4 of a TorBox integration plus a user experience round driven by user feedback. The
+goal of the first four phases was to show that TorBox support fits the existing architecture
+without a rewrite: everything above the `*ApiHelperImpl` layer (helper interfaces, repositories,
+viewmodels, fragments) was untouched, except for a settings entry and the token save path in the
+login screen. The UX round deliberately relaxes that constraint where a feature needs it: the user
+page, the new download screen and the list adapters now know about the two services.
 
 ## How it works
 
@@ -123,15 +125,71 @@ path in the login screen.
   not persisted in any account side list, so there is nothing to delete server side (previously
   this hit the Real-Debrid endpoint and reported an error).
 
+### UX round: dual account user page
+
+- The user page shows one card per service instead of a single account view. The Real-Debrid card
+  keeps the old fields (username, email, avatar, premium state, remaining days, points) and its
+  account page button (real-debrid.com, with the referral dialog). The TorBox card shows the
+  `user/me` data: email, plan (0 Free, 1 Essential, 2 Pro, 3 Standard), remaining premium days
+  (from `premium_expires_at`) and total downloaded, with buttons opening torbox.app/settings (key
+  management) and torbox.app/subscription (plan). No TorBox button opens real-debrid.com.
+- A service that is not logged in shows a compact "not connected" hint on its card: the
+  Real-Debrid one points to the login screen (reachable after logout), the TorBox one to the API
+  key field in the settings or on the login screen.
+- The TorBox account is fetched independently of the main login through a small dedicated
+  `TorBoxRepository` (wrapping `TorBoxApi.getUserInfo` with the same key resolution as the api
+  helpers: the `torbox_api_key` preference first, the stored login token when it is UUID shaped)
+  injected into a new `UserProfileViewModel`. The activity level user fetch that feeds the
+  authentication state machine is untouched, and `UserApiHelperImpl` keeps its token shape routing
+  for the FSM validation call; its mapped user is just no longer used to fill the Real-Debrid card
+  when TorBox backs the main login.
+
+### UX round: choosing where new torrents go, including both
+
+- When both services are logged in the new download screen shows a Real-Debrid / TorBox / Both
+  toggle (a `MaterialButtonToggleGroup`) under the torrent upload controls. It starts from the
+  "Add new torrents to" preference and writes every change straight back to it, so the toggle and
+  the settings dropdown (which gained a "Both" entry) always show the same value and the last
+  choice is the new default. The api helper reads the preference when `addMagnet`/`addTorrent`
+  run, so the choice reaches the routing with zero signature changes; the tradeoff is that the
+  choice is app global, not scoped to one add (deliberate, it doubles as the default).
+- "Both" submits the magnet or .torrent to both services: the TorBox `createtorrent` runs first as
+  a logged best effort call (a TorBox failure never breaks the add), then the Real-Debrid upload
+  proceeds and the app follows it into the usual processing screen (TorBox has no file selection
+  phase to follow anyway). A toast on the new download screen tells the user the torrent was also
+  sent to TorBox. The .torrent request body is byte array backed, so sending it to both services
+  is safe.
+- Entry points that bypass the new download screen (magnets sent from the search tab, the torrent
+  processing screen reached directly) still honor the preference value, they just do not show the
+  toggle or the toast. With a single active service nothing changes: the control stays hidden and
+  the old routing applies.
+
+### UX round: search covers both services, obvious source
+
+- The lists tab search already filters both halves of the merged lists: the query from
+  `ListTabsViewModel.setListFilter` is applied client side in `TorrentPagingSource` and
+  `DownloadPagingSource` with a case insensitive contains on the item names, after the helpers
+  have merged the TorBox items into the page. It never was a Real-Debrid only server side filter
+  (the `filter` parameter of the torrents endpoint is unused by the app), so no routing change was
+  needed here; this was verified rather than modified.
+- Every merged row now makes its source obvious: TorBox rows show a "TorBox · " prefix on the
+  existing per-row label (the status label on torrent rows, e.g. "TORBOX · READY", and the
+  download/streaming label on download rows), bound from `host == "torbox"` in the two list
+  adapters. This label was used instead of prefixing the mapped item names because
+  `DownloadItem.filename` is also the file name used when downloading to the device and the title
+  handed to external players, which a "[TorBox] " prefix would pollute; the names stay raw, which
+  also keeps the search filter matching exactly what the user sees as the name.
+
 ## What works
 
 - Login with a TorBox API key (own section on the login screen), Real-Debrid key or OAuth, in any
   combination and order (TorBox while Real-Debrid is active is added from settings)
-- User screen: the Real-Debrid account when both are active, otherwise the TorBox account
-  (username from the email prefix, premium state and remaining days)
-- Merged torrents list with per-item routing, TorBox items marked with the `torbox` host
-- Adding magnets and .torrent files to either service, with the settings choice when both are
-  active
+- User screen: one card per service with its own account info, action buttons pointing at the
+  right service and a "not connected" hint for the missing one
+- Merged torrents list with per-item routing, TorBox rows labeled with a "TorBox" tag
+- Adding magnets and .torrent files to either service or to both at once, chosen per add from the
+  new download screen when both are active (kept in sync with the settings entry)
+- Searching the lists tab filters the items of both services by name
 - Deleting TorBox torrents, torrent details for `tb-` ids (mapped from `mylist?id=`)
 - Downloading TorBox files: single file torrents go straight to the download details screen,
   multi file torrents open the folder list, both backed by `torrents/requestdl` CDN URLs
@@ -162,10 +220,11 @@ path in the login screen.
   `tb-` id opens a broken web page. The other popup entries (Kodi, VLC and friends) receive the
   plain CDN URL and work.
 - The whole torrent zip download (`requestdl` with `zip_link=true`) is not wired.
-- The user screen only shows the Real-Debrid account when both services are active; the TorBox
-  account info is not displayed anywhere in that case.
-- The list filter (e.g. active torrents) is only applied to the Real-Debrid page; the appended
-  TorBox items are always the full list.
+- The "Both" toast on the new download screen is optimistic: the TorBox copy runs right after and
+  only logs its failure. Magnets added from screens other than the new download one (e.g. the
+  search tab) honor the "Both" preference without showing any toast.
+- The service toggle on the new download screen is read when it opens; adding or removing the
+  TorBox key while the screen is alive does not show/hide it until it is recreated.
 - TorBox torrents and web downloads are only merged into the first page, so they all load at once
   (TorBox caps both endpoints at 1000 items anyway).
 - Setting the TorBox key from settings while completely logged out stores the key, but the login

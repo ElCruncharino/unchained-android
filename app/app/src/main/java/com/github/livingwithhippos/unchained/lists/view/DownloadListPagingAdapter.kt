@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.github.livingwithhippos.unchained.R
 import com.github.livingwithhippos.unchained.data.model.DownloadItem
 import com.github.livingwithhippos.unchained.databinding.ItemListDownloadBinding
+import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
 import com.github.livingwithhippos.unchained.utilities.extension.getFileSizeString
 
 class DownloadListPagingAdapter(private val listener: DownloadListListener) :
@@ -62,9 +63,14 @@ class DownloadViewHolder(
 
     fun bindCell(item: DownloadItem, selected: Boolean) {
         mItem = item
-        binding.tvTitle.text =
+        val title =
             if (item.streamable == 1) itemView.context.getString(R.string.streaming)
             else itemView.context.getString(R.string.download)
+        // make the source service of the merged rows obvious at a glance
+        binding.tvTitle.text =
+            if (item.host == PROVIDER_TORBOX)
+                itemView.context.getString(R.string.torbox_list_label_format, title)
+            else title
         binding.tvName.text = item.filename
         binding.tvSize.text = getFileSizeString(itemView.context, item.fileSize)
         binding.selectionIndicator.visibility = if (selected) View.VISIBLE else View.GONE
