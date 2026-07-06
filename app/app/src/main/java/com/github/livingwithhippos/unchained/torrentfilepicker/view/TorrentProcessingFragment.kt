@@ -200,7 +200,9 @@ class TorrentProcessingFragment : UnchainedFragment(), TorrentContentListener {
                             )
                         context?.showToast(R.string.refreshing_token)
                     } else {
-                        context?.let { c -> c.showToast(c.getApiErrorMessage(response.errorCode)) }
+                        context?.let { c ->
+                            c.showToast(c.getApiErrorMessage(response.errorCode, response.errorDetails))
+                        }
                     }
                     findNavController().popBackStack()
                 }

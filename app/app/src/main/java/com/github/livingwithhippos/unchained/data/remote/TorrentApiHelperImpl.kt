@@ -90,7 +90,7 @@ constructor(
         val torrent = response.body()?.data
         return if (response.isSuccessful && torrent != null)
             Response.success(torrent.toTorrentItem())
-        else torBoxErrorResponse(response.code())
+        else torBoxErrorResponse(response.code(), torBoxErrorMessage(response))
     }
 
     override suspend fun addTorrent(
@@ -143,12 +143,14 @@ constructor(
     private fun mapCreatedTorrent(
         response: Response<TorBoxCreateTorrentResponse>
     ): Response<UploadedTorrent> {
-        if (!response.isSuccessful) return torBoxErrorResponse(response.code())
+        if (!response.isSuccessful)
+            return torBoxErrorResponse(response.code(), torBoxErrorMessage(response))
         val uploaded = response.body()?.data?.toUploadedTorrent()
         if (uploaded == null) {
             // either an unexpected body or a torrent that was only queued by torbox
-            Timber.w("createtorrent did not return a torrent id: ${response.body()?.detail}")
-            return torBoxErrorResponse(500)
+            val detail = response.body()?.detail ?: response.body()?.error
+            Timber.w("createtorrent did not return a torrent id: $detail")
+            return torBoxErrorResponse(500, detail)
         }
         return Response.success(uploaded)
     }
@@ -186,7 +188,11 @@ constructor(
                 when {
                     tbResponse.isSuccessful ->
                         tbResponse.body()?.data.orEmpty().map { it.toTorrentItem() }
-                    !realDebridActive -> return torBoxErrorResponse(tbResponse.code())
+                    !realDebridActive ->
+                        return torBoxErrorResponse(
+                            tbResponse.code(),
+                            torBoxErrorMessage(tbResponse),
+                        )
                     else -> {
                         Timber.w("TorBox torrents list returned ${tbResponse.code()}, skipping")
                         emptyList()
@@ -217,7 +223,7 @@ constructor(
             torBoxApi.controlTorrent(auth, TorBoxControlRequest(torrentId, OPERATION_DELETE))
         return if (response.isSuccessful && response.body()?.success == true)
             Response.success(Unit)
-        else torBoxErrorResponse(response.code())
+        else torBoxErrorResponse(response.code(), torBoxErrorMessage(response))
     }
 
     companion object {

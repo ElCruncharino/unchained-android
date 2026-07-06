@@ -65,6 +65,20 @@ const val TORBOX_WEBDL_ID_PREFIX = "tbw-"
 const val TORBOX_ERROR_WEBDL_QUEUED = 100
 
 /**
+ * synthetic error code (outside the real debrid range) used when torbox itself answers with a 429,
+ * mapped to a torbox specific rate limit message in getApiErrorMessage instead of the generic
+ * real debrid one
+ */
+const val TORBOX_ERROR_RATE_LIMITED = 101
+
+/**
+ * synthetic error code (outside the real debrid range) used when torbox answers with a 5xx,
+ * mapped to a torbox specific outage message in getApiErrorMessage instead of the generic real
+ * debrid one
+ */
+const val TORBOX_ERROR_SERVICE_UNAVAILABLE = 102
+
+/**
  * scheme of the synthetic per-file links put into a torbox torrent's links list, shaped like
  * torbox://[torrent_id]/[file_id]?name=[url encoded file name]&size=[bytes]&mime=[mimetype]. The
  * unrestrict layer recognizes the scheme and exchanges the link for a fresh torbox CDN url

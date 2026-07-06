@@ -250,7 +250,9 @@ class TorrentDetailsFragment : UnchainedFragment(), TorrentContentListener {
                 for (error in it) {
                     when (error) {
                         is APIError -> {
-                            context?.let { c -> c.showToast(c.getApiErrorMessage(error.errorCode)) }
+                            context?.let { c ->
+                                c.showToast(c.getApiErrorMessage(error.errorCode, error.errorDetails))
+                            }
                         }
 
                         is EmptyBodyError -> {}

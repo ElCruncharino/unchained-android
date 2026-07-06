@@ -49,8 +49,31 @@ page, the new download screen and the list adapters now know about the two servi
   Every other torrent call inspects the id: `tb-` ids are stripped and routed to TorBox, other ids
   go to Real-Debrid exactly as before. The host makes TorBox items recognizable in the existing
   list UI with zero layout changes.
-- TorBox errors are converted to Real-Debrid style error bodies (401/403 become error code 8, bad
-  token) so the existing error handling keeps working.
+- TorBox errors are converted to Real-Debrid style error bodies (`torBoxErrorResponse` in
+  `TorBoxApi.kt`) so the existing error handling pipeline (`APIError` → `getApiErrorMessage` →
+  toast) keeps working with no call site changes above the `*ApiHelperImpl` layer. The mapping was
+  improved past the original 401/403-only handling: 401/403 still become error code 8 ("Bad
+  token"); a 429 and any 5xx get their own synthetic codes (`TORBOX_ERROR_RATE_LIMITED`,
+  `TORBOX_ERROR_SERVICE_UNAVAILABLE` in `Constants.kt`) mapped to TorBox specific strings ("TorBox
+  is rate limiting requests..." / "TorBox seems to be down..."), instead of both collapsing into
+  the generic Real-Debrid "Too many requests"/"Service unavailable" copy. Everything else keeps the
+  generic -1/"internal error" code, but now carries TorBox's own `error`/`detail` text (read from
+  the failed response's body by `torBoxErrorMessage`, or from the parsed body directly when the
+  call itself succeeded but returned an unusable result, e.g. a queued-only torrent) in `APIError`'s
+  existing (previously unused) `error_details` field. `getApiErrorMessage` shows that raw text
+  instead of "Internal error" only for the -1 code, leaving every real Real-Debrid error code (1 to
+  ~36) exactly as translated before. Every `torBoxErrorResponse` call site across
+  `TorrentApiHelperImpl.kt`, `DownloadApiHelperImpl.kt`, `UnrestrictApiHelperImpl.kt` and
+  `UserApiHelperImpl.kt` was updated to pass this extra detail through where a real failed (or
+  unexpectedly shaped) response is available; call sites that fail before any network call (a
+  missing local key, an unparsable local torrent id) still pass no detail, since there is no
+  TorBox response to read one from. The `TorBoxRepository`/`UserProfileViewModel` account fetch
+  used by the user page also stops collapsing every failure into "check your API key": an
+  `IOException`/timeout now shows a distinct "could not reach TorBox, check your connection" message
+  instead of pointing the user at their key over what might be a transient network blip. None of
+  this has been exercised against a live TorBox account triggering a real 429 or 5xx, so the exact
+  toast wording for those paths is unverified end to end, only unit-level (string mapping, JSON
+  parsing of the synthetic error body).
 
 ### Adding torrents (phase 2)
 

@@ -90,7 +90,11 @@ constructor(
                 when {
                     tbResponse.isSuccessful ->
                         tbResponse.body()?.data.orEmpty().flatMap { it.toDownloadItems(rawKey) }
-                    !realDebridActive -> return torBoxErrorResponse(tbResponse.code())
+                    !realDebridActive ->
+                        return torBoxErrorResponse(
+                            tbResponse.code(),
+                            torBoxErrorMessage(tbResponse),
+                        )
                     else -> {
                         Timber.w("TorBox web downloads list returned ${tbResponse.code()}")
                         emptyList()
@@ -135,7 +139,7 @@ constructor(
                 )
             return if (response.isSuccessful && response.body()?.success == true)
                 Response.success(Unit)
-            else torBoxErrorResponse(response.code())
+            else torBoxErrorResponse(response.code(), torBoxErrorMessage(response))
         }
         // download items minted from torbox torrent files exist only in the local history table
         // (torbox keeps no account side list of them), so deleting one removes the local row.

@@ -6,6 +6,7 @@ import com.github.livingwithhippos.unchained.data.model.TorBoxUser
 import com.github.livingwithhippos.unchained.data.remote.TorBoxApi
 import com.github.livingwithhippos.unchained.data.remote.isTorBoxApiKey
 import com.github.livingwithhippos.unchained.data.remote.torBoxApiKey
+import java.io.IOException
 import javax.inject.Inject
 import timber.log.Timber
 
@@ -40,19 +41,48 @@ constructor(
         return !token.isNullOrBlank() && !isTorBoxApiKey(token)
     }
 
-    /** the torbox account behind the api key, null when torbox is not active or the call fails */
-    suspend fun getTorBoxUser(): TorBoxUser? {
-        val key = torBoxKey() ?: return null
+    /**
+     * fetches the torbox account behind the api key, distinguishing a transient network problem
+     * (no connection, timeout...) from an actual bad/revoked key so the caller can show a message
+     * that does not send the user chasing their api key over a plain connectivity blip
+     */
+    suspend fun getTorBoxUser(): TorBoxUserResult {
+        val key = torBoxKey() ?: return TorBoxUserResult.BadKey
         return try {
             val response = torBoxApi.getUserInfo("Bearer $key")
-            if (response.isSuccessful) response.body()?.data
-            else {
-                Timber.w("TorBox user call returned ${response.code()}")
-                null
+            val user = response.body()?.data
+            when {
+                response.isSuccessful && user != null -> TorBoxUserResult.Success(user)
+                response.code() == 401 || response.code() == 403 -> {
+                    Timber.w("TorBox user call returned ${response.code()}")
+                    TorBoxUserResult.BadKey
+                }
+                else -> {
+                    Timber.w("TorBox user call returned ${response.code()}")
+                    TorBoxUserResult.Unknown
+                }
             }
+        } catch (e: IOException) {
+            // network hiccup or timeout: transient, unrelated to the key itself
+            Timber.w(e, "Network error fetching the torbox user")
+            TorBoxUserResult.NetworkIssue
         } catch (e: Exception) {
             Timber.w(e, "Error fetching the torbox user")
-            null
+            TorBoxUserResult.Unknown
         }
     }
+}
+
+/** result of [TorBoxRepository.getTorBoxUser], keeping a network failure distinguishable from a key one */
+sealed class TorBoxUserResult {
+    data class Success(val user: TorBoxUser) : TorBoxUserResult()
+
+    /** the key is missing, was rejected (401/403) or another non network error occurred */
+    data object BadKey : TorBoxUserResult()
+
+    /** an IOException/timeout was thrown while calling torbox: likely a transient connection issue */
+    data object NetworkIssue : TorBoxUserResult()
+
+    /** a call succeeded with an unexpected body, or failed with an http error other than 401/403 */
+    data object Unknown : TorBoxUserResult()
 }
