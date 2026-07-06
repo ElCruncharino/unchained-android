@@ -320,7 +320,9 @@ class ListsTabFragment : UnchainedFragment() {
                 for (error in it) {
                     when (error) {
                         is APIError -> {
-                            context?.let { c -> c.showToast(c.getApiErrorMessage(error.errorCode)) }
+                            context?.let { c ->
+                                c.showToast(c.getApiErrorMessage(error.errorCode, error.errorDetails))
+                            }
                             when (error.errorCode) {
                                 8 -> {
                                     // bad token, try refreshing it

@@ -21,6 +21,6 @@ constructor(
         val response = torBoxApi.getUserInfo(token)
         val user = response.body()?.data
         return if (response.isSuccessful && user != null) Response.success(user.toUser())
-        else torBoxErrorResponse(response.code())
+        else torBoxErrorResponse(response.code(), torBoxErrorMessage(response))
     }
 }

@@ -40,6 +40,8 @@ import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Comp
 import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Companion.THEME_DAY
 import com.github.livingwithhippos.unchained.settings.view.ThemeItem
 import com.github.livingwithhippos.unchained.utilities.EitherResult
+import com.github.livingwithhippos.unchained.utilities.TORBOX_ERROR_RATE_LIMITED
+import com.github.livingwithhippos.unchained.utilities.TORBOX_ERROR_SERVICE_UNAVAILABLE
 import com.github.livingwithhippos.unchained.utilities.TORBOX_ERROR_WEBDL_QUEUED
 import java.util.Locale
 import timber.log.Timber
@@ -363,9 +365,15 @@ fun AppCompatActivity.setNavigationBarColor(color: Int, alpha: Int = 0) {
             window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
 }
 
-fun Context.getApiErrorMessage(errorCode: Int?): String {
+/**
+ * translates a real debrid style numeric error code to a readable string. [rawMessage] is an
+ * optional raw message coming straight from a service's own error body (used by the torbox
+ * integration, which has no well defined error code range of its own): it is only shown as a
+ * fallback for the generic -1/unknown code, never in place of a specific mapped message
+ */
+fun Context.getApiErrorMessage(errorCode: Int?, rawMessage: String? = null): String {
     return when (errorCode) {
-        -1 -> getString(R.string.internal_error)
+        -1 -> rawMessage?.takeIf { it.isNotBlank() } ?: getString(R.string.internal_error)
         1 -> getString(R.string.missing_parameter)
         2 -> getString(R.string.bad_parameter_value)
         3 -> getString(R.string.unknown_method)
@@ -405,6 +413,9 @@ fun Context.getApiErrorMessage(errorCode: Int?): String {
         36 -> getString(R.string.usage_limit_reached)
         // synthetic code, not from real debrid: a link queued on torbox but not fetched yet
         TORBOX_ERROR_WEBDL_QUEUED -> getString(R.string.torbox_download_queued)
+        // synthetic codes, not from real debrid: torbox specific rate limit/outage messages
+        TORBOX_ERROR_RATE_LIMITED -> getString(R.string.torbox_rate_limited)
+        TORBOX_ERROR_SERVICE_UNAVAILABLE -> getString(R.string.torbox_service_unavailable)
         else -> getString(R.string.unknown_error)
     }
 }

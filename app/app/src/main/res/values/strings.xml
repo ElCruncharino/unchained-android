@@ -777,6 +777,9 @@
     <string name="torbox_api_key_summary">Paste your TorBox API key to also use a TorBox account. Leave empty to remove it.</string>
     <string name="add_torrents_service">Add new torrents to</string>
     <string name="torbox_download_queued">Download queued on TorBox. It will appear in the downloads list once fetched.</string>
+    <string name="torbox_rate_limited">TorBox is rate limiting requests, try again in a moment.</string>
+    <string name="torbox_service_unavailable">TorBox seems to be down, try again later.</string>
+    <string name="torbox_network_error">Could not reach TorBox. Check your connection and try again.</string>
     <string name="real_debrid" translatable="false">Real-Debrid</string>
     <string name="subscription">Subscription</string>
     <string name="torbox_plan_format">Plan: %1$s</string>
