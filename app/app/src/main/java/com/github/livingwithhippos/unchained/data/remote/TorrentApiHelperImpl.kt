@@ -13,6 +13,7 @@ import com.github.livingwithhippos.unchained.utilities.PROVIDER_BOTH
 import com.github.livingwithhippos.unchained.utilities.PROVIDER_REAL_DEBRID
 import com.github.livingwithhippos.unchained.utilities.PROVIDER_TORBOX
 import com.github.livingwithhippos.unchained.utilities.TORBOX_TORRENT_ID_PREFIX
+import com.github.livingwithhippos.unchained.utilities.sortedByRecencyDescending
 import javax.inject.Inject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -199,7 +200,14 @@ constructor(
                 emptyList<TorrentItem>()
             }
 
-        return Response.success(realDebridTorrents + torBoxTorrents)
+        // only worth parsing dates and re-sorting when there is an actual interleaving to do: with
+        // a single non-empty source the plain concatenation is already in the right order
+        val combined = realDebridTorrents + torBoxTorrents
+        return Response.success(
+            if (realDebridTorrents.isNotEmpty() && torBoxTorrents.isNotEmpty())
+                combined.sortedByRecencyDescending { it.added }
+            else combined
+        )
     }
 
     override suspend fun selectFiles(token: String, id: String, files: String): Response<Unit> =

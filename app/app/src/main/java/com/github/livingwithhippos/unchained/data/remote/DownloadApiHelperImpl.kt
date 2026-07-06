@@ -8,6 +8,7 @@ import com.github.livingwithhippos.unchained.data.model.toDownloadItem
 import com.github.livingwithhippos.unchained.data.model.toDownloadItems
 import com.github.livingwithhippos.unchained.utilities.TORBOX_TORRENT_ID_PREFIX
 import com.github.livingwithhippos.unchained.utilities.TORBOX_WEBDL_ID_PREFIX
+import com.github.livingwithhippos.unchained.utilities.sortedByRecencyDescending
 import javax.inject.Inject
 import retrofit2.Response
 import timber.log.Timber
@@ -115,8 +116,18 @@ constructor(
                 emptyList<DownloadItem>()
             }
 
-        return Response.success(
+        // only worth parsing dates and re-sorting when at least two of the three sources actually
+        // contributed rows: with a single non-empty source the plain concatenation is already in
+        // the right order
+        val mergedSourceCount =
+            listOf(realDebridDownloads, torBoxDownloads, torrentFileHistory).count {
+                it.isNotEmpty()
+            }
+        val merged =
             (realDebridDownloads + torBoxDownloads + torrentFileHistory).distinctBy { it.id }
+        return Response.success(
+            if (mergedSourceCount > 1) merged.sortedByRecencyDescending { it.generated }
+            else merged
         )
     }
 
