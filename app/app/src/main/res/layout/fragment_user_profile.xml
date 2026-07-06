@@ -148,6 +148,17 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvRdDescription" />
 
+                <Button
+                    android:id="@+id/bRdDisconnect"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/disconnect"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/bAccount" />
+
                 <TextView
                     android:id="@+id/tvRdNotConnected"
                     android:layout_width="0dp"
@@ -177,7 +188,7 @@
                     android:id="@+id/groupRdConnected"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:constraint_referenced_ids="ivProfilePic,tvName,tvMail,tvPremium,tvPremiumDays,pointsBar,tvPoints,tvRdDescription,bAccount" />
+                    app:constraint_referenced_ids="ivProfilePic,tvName,tvMail,tvPremium,tvPremiumDays,pointsBar,tvPoints,tvRdDescription,bAccount,bRdDisconnect" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -278,6 +289,17 @@
                     app:layout_constraintStart_toEndOf="@+id/bTbAccount"
                     app:layout_constraintTop_toTopOf="@id/bTbAccount" />
 
+                <Button
+                    android:id="@+id/bTbDisconnect"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/disconnect"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/bTbAccount" />
+
                 <TextView
                     android:id="@+id/tvTbNotConnected"
                     android:layout_width="0dp"
@@ -308,7 +330,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:visibility="gone"
-                    app:constraint_referenced_ids="tvTbMail,tvTbPlan,tvTbPremiumDays,tvTbDownloaded,bTbAccount,bTbSubscription" />
+                    app:constraint_referenced_ids="tvTbMail,tvTbPlan,tvTbPremiumDays,tvTbDownloaded,bTbAccount,bTbSubscription,bTbDisconnect" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.card.MaterialCardView>

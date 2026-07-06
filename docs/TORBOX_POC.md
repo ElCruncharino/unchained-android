@@ -192,6 +192,42 @@ page, the new download screen and the list adapters now know about the two servi
   for the FSM validation call; its mapped user is just no longer used to fill the Real-Debrid card
   when TorBox backs the main login.
 
+### UX round: disconnecting a service from the user page
+
+- Each connected card (`groupRdConnected`/`groupTbConnected`) now also shows a Disconnect button
+  next to its account page button(s), so a service can be removed without the settings screen
+  workaround (blanking the TorBox key field) or a full logout. Tapping it shows a confirmation
+  dialog first (`UserProfileFragment.showDisconnectConfirmDialog`, built inline the same way as
+  the connect dialogs), with one of two messages depending on what disconnecting would leave
+  active: a plain "you can reconnect any time" message, or a "this is your only connected account,
+  disconnecting logs you out" warning with the logout string on the positive button instead of
+  "Disconnect".
+- Which message and which action to run is decided before the dialog opens, by checking whether
+  the other service is currently active (`UserProfileViewModel.isRealDebridActive`/`isTorBoxActive`,
+  thin suspend wrappers around the existing `TorBoxRepository` checks, called directly from the
+  fragment's `lifecycleScope` the same way `MainActivityViewModel.isTokenPrivate` already is):
+  - Disconnecting TorBox while Real-Debrid is active (`isRealDebridActive() == true`) just clears
+    the `torbox_api_key` preference (`UserProfileViewModel.disconnectTorBox`). The datastore
+    credentials and the state machine are untouched, exactly like blanking the settings field.
+  - Disconnecting Real-Debrid while TorBox is active as a secondary account
+    (`isTorBoxActive() == true`) promotes TorBox to the main login
+    (`UserProfileViewModel.disconnectRealDebrid`): the TorBox api key (read straight from the
+    `torbox_api_key` preference) is stored as the datastore access token with the usual private
+    token sentinel fields (`PRIVATE_TOKEN` device code/client id/client secret/refresh token),
+    the same fields `saveTorBoxApiKey`/the connect dialogs already use. No state machine event is
+    needed: this only runs while the machine is already in `AuthenticatedPrivateToken` (confirmed
+    by reading `FSMAuthentication.kt`, matching the reasoning already established for the connect
+    flows), and a TorBox key is a private token login too. After this `isRealDebridActive()`
+    correctly flips to false with zero other code changes, because the token shape check that
+    drives every other routing decision now sees the TorBox UUID.
+  - Disconnecting the only connected service (the other one is not active) routes to the existing
+    `SettingsViewModel.userLogout()` instead of a partial disconnect: the fragment shares that
+    view model with an `activityViewModels()` delegate (the same way `SettingsFragment` uses it)
+    and observes its event for the toast plus `finishAffinity()`. This clears both credentials
+    exactly like triggering logout from the settings screen; no new logout logic was written.
+  - Both partial disconnect cases post a `UserProfileEvent.ServiceDisconnected` event that calls
+    `fetchAccountsStatus()`, refreshing both cards the same way a successful Connect already does.
+
 ### UX round: choosing where new torrents go, including both
 
 - When both services are logged in the new download screen shows a Real-Debrid / TorBox / Both
@@ -236,6 +272,10 @@ page, the new download screen and the list adapters now know about the two servi
   right service; the missing service shows a Connect button opening a dialog that adds the
   account in place (Real-Debrid private token, checked against the API before being stored, or
   TorBox API key). OAuth stays on the login screen, reachable after logout
+- User screen: each connected card also shows a Disconnect button with a confirmation dialog;
+  disconnecting one service while the other stays active is a partial disconnect (clears the
+  TorBox key, or promotes TorBox to the main login when Real-Debrid is removed), while
+  disconnecting the only active service runs the same full logout as the settings screen
 - Merged torrents list with per-item routing, TorBox rows labeled with a "TorBox" tag
 - Adding magnets and .torrent files to either service or to both at once, chosen per add from the
   new download screen when both are active (kept in sync with the settings entry)
@@ -289,3 +329,7 @@ page, the new download screen and the list adapters now know about the two servi
 - None of this has been exercised against live accounts; the mapping (including the exact
   `requestdl` response shapes and the `createwebdownload` result) is based on the public API
   documentation and the OpenAPI spec with defensive parsing.
+- The disconnect flow on the user page is untested against live accounts too, same standing
+  caveat: the token shape based routing and the private token sentinel fields are exercised
+  elsewhere in this POC, but the promote-TorBox-to-main-login path introduced here has only been
+  verified by reading the state machine and the equivalent connect flows, not by running it.

@@ -14,6 +14,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
 import androidx.core.content.edit
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import coil.load
@@ -26,6 +27,8 @@ import com.github.livingwithhippos.unchained.databinding.FragmentUserProfileBind
 import com.github.livingwithhippos.unchained.settings.view.SettingsActivity
 import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Companion.KEY_REFERRAL_ASKED
 import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Companion.KEY_REFERRAL_USE
+import com.github.livingwithhippos.unchained.settings.viewmodel.SettingEvent
+import com.github.livingwithhippos.unchained.settings.viewmodel.SettingsViewModel
 import com.github.livingwithhippos.unchained.statemachine.authentication.FSMAuthenticationState
 import com.github.livingwithhippos.unchained.user.viewmodel.TorBoxAccountStatus
 import com.github.livingwithhippos.unchained.user.viewmodel.UserProfileEvent
@@ -59,6 +62,10 @@ class UserProfileFragment : UnchainedFragment() {
     @Inject lateinit var preferences: SharedPreferences
 
     private val viewModel: UserProfileViewModel by viewModels()
+
+    // shared with the settings screen so a disconnect that would leave no service active can
+    // reuse the exact same logout logic (clears both credentials and kills the app)
+    private val settingsViewModel: SettingsViewModel by activityViewModels()
 
     private var _binding: FragmentUserProfileBinding? = null
 
@@ -145,6 +152,23 @@ class UserProfileFragment : UnchainedFragment() {
                     }
                     UserProfileEvent.RealDebridTokenError ->
                         context?.showToast(R.string.invalid_token)
+                    UserProfileEvent.ServiceDisconnected -> viewModel.fetchAccountsStatus()
+                }
+            },
+        )
+
+        settingsViewModel.eventLiveData.observe(
+            viewLifecycleOwner,
+            EventObserver { event ->
+                when (event) {
+                    // a disconnect that would leave no service active routes to the real logout
+                    // instead, same behavior as triggering it from the settings screen
+                    SettingEvent.Logout -> {
+                        context?.showToast(R.string.user_logged_out)
+                        activity?.finishAffinity()
+                    }
+                    SettingEvent.LogoutNoCredentials ->
+                        context?.showToast(R.string.no_credentials_found)
                 }
             },
         )
@@ -152,6 +176,10 @@ class UserProfileFragment : UnchainedFragment() {
         binding.bRdConnect.setOnClickListener { showRealDebridConnectDialog() }
 
         binding.bTbConnect.setOnClickListener { showTorBoxConnectDialog() }
+
+        binding.bRdDisconnect.setOnClickListener { onRealDebridDisconnectClicked() }
+
+        binding.bTbDisconnect.setOnClickListener { onTorBoxDisconnectClicked() }
 
         activityViewModel.userLiveData.observe(viewLifecycleOwner) {
             if (_binding == null) return@observe
@@ -331,6 +359,57 @@ class UserProfileFragment : UnchainedFragment() {
                 false
             }
         }
+    }
+
+    /**
+     * Disconnecting real debrid is a plain preference clear when torbox is also active (torbox is
+     * promoted to the main login), but a full logout when torbox is not connected, since that
+     * would otherwise leave no service active
+     */
+    private fun onRealDebridDisconnectClicked() {
+        lifecycleScope.launch {
+            val torBoxActive = viewModel.isTorBoxActive()
+            showDisconnectConfirmDialog(getString(R.string.real_debrid), willLogout = !torBoxActive) {
+                if (torBoxActive) viewModel.disconnectRealDebrid() else settingsViewModel.userLogout()
+            }
+        }
+    }
+
+    /**
+     * Disconnecting torbox is a plain preference clear when real debrid is also active, but a
+     * full logout when real debrid is not connected, since that would otherwise leave no service
+     * active
+     */
+    private fun onTorBoxDisconnectClicked() {
+        lifecycleScope.launch {
+            val realDebridActive = viewModel.isRealDebridActive()
+            showDisconnectConfirmDialog(getString(R.string.torbox), willLogout = !realDebridActive) {
+                if (realDebridActive) viewModel.disconnectTorBox() else settingsViewModel.userLogout()
+            }
+        }
+    }
+
+    /**
+     * Shows the disconnect confirmation dialog for a connected service card. When [willLogout] is
+     * true, disconnecting this service would leave none active, so the message and button warn
+     * that the whole app will log out instead of a simple partial disconnect
+     */
+    private fun showDisconnectConfirmDialog(
+        serviceName: String,
+        willLogout: Boolean,
+        onConfirm: () -> Unit,
+    ) {
+        val message =
+            if (willLogout) getString(R.string.disconnect_logout_message, serviceName)
+            else getString(R.string.disconnect_service_message, serviceName)
+        val positiveLabel =
+            if (willLogout) getString(R.string.logout) else getString(R.string.disconnect)
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(serviceName)
+            .setMessage(message)
+            .setNegativeButton(getString(R.string.close)) { d, _ -> d.cancel() }
+            .setPositiveButton(positiveLabel) { _, _ -> onConfirm() }
+            .show()
     }
 
     /**

@@ -793,6 +793,9 @@
     <string name="connect_real_debrid_oauth_hint">To use the OAuth login instead, log out and sign in from the login screen.</string>
     <string name="connect_torbox_message">Paste your TorBox API key from the settings page at https://torbox.app/settings to connect the account.</string>
     <string name="real_debrid_token_is_torbox">This looks like a TorBox API key. Use the Connect button on the TorBox card instead.</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="disconnect_service_message">Disconnect your %1$s account? You can reconnect it at any time from this screen.</string>
+    <string name="disconnect_logout_message">%1$s is your only connected account. Disconnecting it will log you out completely.</string>
     <string name="both">Both</string>
     <string name="torrent_also_sent_torbox">Also sending the torrent to TorBox</string>
     <string name="torbox_list_label_format" translatable="false">TorBox · %1$s</string>
