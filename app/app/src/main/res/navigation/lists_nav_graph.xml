@@ -75,9 +75,10 @@
             app:argType="string"
             app:nullable="true" />
         <argument
-            android:name="torrent"
-            app:argType="com.github.livingwithhippos.unchained.data.model.TorrentItem"
-            app:nullable="true" />
+            android:name="filename"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
         <action
             android:id="@+id/action_folderListFragment_to_download_details_dest"
             app:destination="@id/download_details_dest" />
