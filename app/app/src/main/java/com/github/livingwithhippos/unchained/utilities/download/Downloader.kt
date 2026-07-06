@@ -17,14 +17,10 @@ class Downloader(private val client: OkHttpClient, private val writer: FileWrite
             client.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
                     val responseBody = response.body
-                    if (responseBody != null) {
-                        val length: Double =
-                            response.header("Content-Length", "1")?.toDouble() ?: 1.toDouble()
+                    val length: Double =
+                        response.header("Content-Length", "1")?.toDouble() ?: 1.toDouble()
 
-                        return@withContext writer.write(responseBody.byteStream(), length)
-                    } else {
-                        throw IllegalStateException("Response doesn't contain a file")
-                    }
+                    return@withContext writer.write(responseBody.byteStream(), length)
                 } else {
                     throw NetworkErrorException("Response not successful: ${response.code}")
                 }

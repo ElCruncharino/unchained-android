@@ -533,7 +533,7 @@ class Parser(
             // todo: return the complete Response to let the caller check the return code
             try {
                 getClient().newCall(request).execute().use { response: Response ->
-                    response.body?.string() ?: ""
+                    response.body.string()
                 }
             } catch (e: Exception) {
                 // todo: checking different exceptions can help debugging the issue
@@ -556,7 +556,7 @@ class Parser(
             try {
                 val response = getClient().newCall(request).execute()
                 if (response.isSuccessful) {
-                    val text = response.body?.string()
+                    val text = response.body.string()
                     if (text.isNullOrBlank()) {
                         return@withContext WebResponse.EmptyBodyError
                     }
