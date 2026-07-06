@@ -82,8 +82,8 @@ class ServicePickerDialog : DialogFragment(), ServicePickerListener {
             Timber.e("Download url is null")
             context?.showToast(R.string.error)
         } else if (addSubtitleMode) {
-            if (serviceDetails.type == RemoteServiceType.KODI) {
-                viewModel.addSubtitleOnKodi(link, serviceDetails.service)
+            if (service.type == RemoteServiceType.KODI) {
+                viewModel.addSubtitleOnKodi(link, service.service)
             } else {
                 Timber.e("Adding a subtitle is only supported on Kodi")
                 context?.showToast(R.string.error)
