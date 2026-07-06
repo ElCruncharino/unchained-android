@@ -25,9 +25,10 @@ class DownloadListPagingAdapter(private val listener: DownloadListListener) :
         override fun areItemsTheSame(oldItem: DownloadItem, newItem: DownloadItem): Boolean =
             oldItem.id == newItem.id
 
-        // content does not change on update
         override fun areContentsTheSame(oldItem: DownloadItem, newItem: DownloadItem): Boolean =
-            true
+            oldItem.filename == newItem.filename &&
+                oldItem.fileSize == newItem.fileSize &&
+                oldItem.streamable == newItem.streamable
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DownloadViewHolder {
