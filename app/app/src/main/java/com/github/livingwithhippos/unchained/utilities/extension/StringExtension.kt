@@ -21,6 +21,12 @@ val simpleWebRegex = Regex(urlPattern)
 
 fun String.isSimpleWebUrl(): Boolean = simpleWebRegex.containsMatchIn(this)
 
+private val magnetPattern: Pattern = Pattern.compile(MAGNET_PATTERN)
+
+private val torrentPattern: Pattern = Pattern.compile(TORRENT_PATTERN)
+
+private val containerPattern: Pattern = Pattern.compile(CONTAINER_PATTERN)
+
 fun String.removeWebFormatting(): String {
     return this.replace("%3A", ":")
         .replace("%3F", "?")
@@ -66,21 +72,21 @@ fun formatStringForSearch(query: String): String {
 /** check if a String is a magnet link */
 fun String?.isMagnet(): Boolean {
     if (this == null) return false
-    val m: Matcher = Pattern.compile(MAGNET_PATTERN).matcher(this)
+    val m: Matcher = magnetPattern.matcher(this)
     return m.lookingAt()
 }
 
 /** check if a String is a torrent link */
 fun String?.isTorrent(): Boolean {
     if (this == null) return false
-    val m: Matcher = Pattern.compile(TORRENT_PATTERN).matcher(this)
+    val m: Matcher = torrentPattern.matcher(this)
     return m.matches()
 }
 
 /** check if a String is a container link */
 fun String?.isContainerWebLink(): Boolean {
     if (this == null) return false
-    val m: Matcher = Pattern.compile(CONTAINER_PATTERN).matcher(this)
+    val m: Matcher = containerPattern.matcher(this)
     return m.lookingAt()
 }
 
