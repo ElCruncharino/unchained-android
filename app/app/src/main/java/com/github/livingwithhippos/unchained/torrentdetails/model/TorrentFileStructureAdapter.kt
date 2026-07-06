@@ -115,7 +115,7 @@ class TorrentContentFilesAdapter :
             oldItem: TorrentFileItem,
             newItem: TorrentFileItem,
         ): Boolean {
-            return true
+            return oldItem.name == newItem.name && oldItem.bytes == newItem.bytes
         }
     }
 
