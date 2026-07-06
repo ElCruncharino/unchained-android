@@ -10,6 +10,7 @@ import com.github.livingwithhippos.unchained.data.model.TorBoxUser
 import com.github.livingwithhippos.unchained.data.model.User
 import com.github.livingwithhippos.unchained.data.remote.torBoxApiKey
 import com.github.livingwithhippos.unchained.data.repository.TorBoxRepository
+import com.github.livingwithhippos.unchained.data.repository.TorBoxUserResult
 import com.github.livingwithhippos.unchained.data.repository.UserRepository
 import com.github.livingwithhippos.unchained.utilities.Event
 import com.github.livingwithhippos.unchained.utilities.KEY_TORBOX_API_KEY
@@ -53,10 +54,14 @@ constructor(
             if (!torBoxRepository.isTorBoxActive()) {
                 torBoxStatusLiveData.postValue(TorBoxAccountStatus.NotConnected)
             } else {
-                val user = torBoxRepository.getTorBoxUser()
                 torBoxStatusLiveData.postValue(
-                    if (user != null) TorBoxAccountStatus.Connected(user)
-                    else TorBoxAccountStatus.Error
+                    when (val result = torBoxRepository.getTorBoxUser()) {
+                        is TorBoxUserResult.Success -> TorBoxAccountStatus.Connected(result.user)
+                        // a transient connection problem is not the user's key being wrong, say so
+                        TorBoxUserResult.NetworkIssue -> TorBoxAccountStatus.NetworkError
+                        TorBoxUserResult.BadKey,
+                        TorBoxUserResult.Unknown -> TorBoxAccountStatus.Error
+                    }
                 )
             }
         }
@@ -138,7 +143,11 @@ sealed class TorBoxAccountStatus {
 
     data object NotConnected : TorBoxAccountStatus()
 
+    /** the key is missing/invalid or an unexpected error occurred */
     data object Error : TorBoxAccountStatus()
+
+    /** a network/timeout issue occurred while fetching the account, unrelated to the key itself */
+    data object NetworkError : TorBoxAccountStatus()
 }
 
 sealed class UserProfileEvent {
