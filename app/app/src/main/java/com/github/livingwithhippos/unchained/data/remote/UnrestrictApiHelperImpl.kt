@@ -51,7 +51,7 @@ constructor(
                 Response.success(
                     torBoxLink.toDownloadItem(originalLink = link, downloadUrl = downloadUrl)
                 )
-            else torBoxErrorResponse(response.code())
+            else torBoxErrorResponse(response.code(), torBoxErrorMessage(response))
         }
         // pasted hoster links go to real debrid whenever it is active (instant unrestricting is
         // the better experience), only torbox-only accounts use the torbox web downloads
@@ -76,12 +76,14 @@ constructor(
         val auth = "Bearer $key"
 
         val createResponse = torBoxApi.createWebDownload(auth, link, password)
-        if (!createResponse.isSuccessful) return torBoxErrorResponse(createResponse.code())
+        if (!createResponse.isSuccessful)
+            return torBoxErrorResponse(createResponse.code(), torBoxErrorMessage(createResponse))
         val created = createResponse.body()?.data
         val webId = created?.webDownloadId ?: created?.id
         if (webId == null) {
-            Timber.w("createwebdownload returned no id: ${createResponse.body()?.detail}")
-            return torBoxErrorResponse(500)
+            val detail = createResponse.body()?.detail ?: createResponse.body()?.error
+            Timber.w("createwebdownload returned no id: $detail")
+            return torBoxErrorResponse(500, detail)
         }
 
         // fetching from the hoster is asynchronous, poll for a bit before giving up
@@ -100,7 +102,7 @@ constructor(
                 val downloadUrl = dlResponse.body()?.data
                 return if (dlResponse.isSuccessful && !downloadUrl.isNullOrBlank())
                     Response.success(webDownload.toDownloadItem(file, downloadUrl))
-                else torBoxErrorResponse(dlResponse.code())
+                else torBoxErrorResponse(dlResponse.code(), torBoxErrorMessage(dlResponse))
             }
         }
 

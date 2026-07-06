@@ -226,7 +226,8 @@ class NewDownloadFragment : UnchainedFragment() {
                     is APIError -> {
                         // error codes outside the known range will return unknown error
                         val errorCode = exception.errorCode ?: -2
-                        val errorMessage = requireContext().getApiErrorMessage(errorCode)
+                        val errorMessage =
+                            requireContext().getApiErrorMessage(errorCode, exception.errorDetails)
                         // manage the api error result
                         when (exception.errorCode) {
                             -1,

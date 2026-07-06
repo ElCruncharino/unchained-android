@@ -63,6 +63,17 @@ data class TorBoxCreatedTorrent(
     @param:Json(name = "name") val name: String?,
 )
 
+/**
+ * minimal shape shared by every torbox response envelope (see the note above), used to pull a
+ * human readable message out of a failed response body regardless of its concrete data type.
+ * Moshi ignores the extra "success"/"data" fields of the real envelope when parsing this
+ */
+@JsonClass(generateAdapter = true)
+data class TorBoxErrorEnvelope(
+    @param:Json(name = "error") val error: String?,
+    @param:Json(name = "detail") val detail: String?,
+)
+
 /** body of the controltorrent call, the operation is a string like "delete" */
 @JsonClass(generateAdapter = true)
 data class TorBoxControlRequest(

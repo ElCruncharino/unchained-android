@@ -137,6 +137,13 @@ class UserProfileFragment : UnchainedFragment() {
                     // the key can be replaced right from the card when it stopped working
                     binding.bTbConnect.visibility = View.VISIBLE
                 }
+                TorBoxAccountStatus.NetworkError -> {
+                    binding.groupTbConnected.visibility = View.GONE
+                    binding.tvTbNotConnected.text = getString(R.string.torbox_network_error)
+                    binding.tvTbNotConnected.visibility = View.VISIBLE
+                    // not a key problem, but still offered in case the user wants to replace it
+                    binding.bTbConnect.visibility = View.VISIBLE
+                }
             }
         }
 
