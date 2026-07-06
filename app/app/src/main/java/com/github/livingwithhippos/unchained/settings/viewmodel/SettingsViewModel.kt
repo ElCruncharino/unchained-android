@@ -12,6 +12,7 @@ import com.github.livingwithhippos.unchained.data.local.ProtoStore
 import com.github.livingwithhippos.unchained.data.repository.HostsRepository
 import com.github.livingwithhippos.unchained.data.repository.KodiRepository
 import com.github.livingwithhippos.unchained.data.repository.PluginRepository
+import com.github.livingwithhippos.unchained.data.repository.TorBoxRepository
 import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Companion.KEY_THEME_NEW
 import com.github.livingwithhippos.unchained.settings.view.ThemeItem
 import com.github.livingwithhippos.unchained.start.viewmodel.MainActivityViewModel.Companion.KEY_DOWNLOAD_FOLDER
@@ -33,6 +34,7 @@ constructor(
     private val kodiRepository: KodiRepository,
     private val protoStore: ProtoStore,
     private val preferences: SharedPreferences,
+    private val torBoxRepository: TorBoxRepository,
 ) : ViewModel() {
 
     val kodiLiveData = MutableLiveData<Event<Boolean>>()
@@ -115,6 +117,10 @@ constructor(
     fun getCurrentTheme(): Int {
         return preferences.getInt(KEY_THEME_NEW, R.style.Theme_Unchained_Material3_Green_One)
     }
+
+    /** true when both real debrid and torbox are logged in, mirrors the new download screen check */
+    suspend fun areBothServicesActive(): Boolean =
+        torBoxRepository.isRealDebridActive() && torBoxRepository.isTorBoxActive()
 }
 
 sealed class SettingEvent {

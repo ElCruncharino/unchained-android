@@ -41,10 +41,16 @@ interface TorBoxApi {
     @GET("user/me")
     suspend fun getUserInfo(@Header("Authorization") token: String): Response<TorBoxUserResponse>
 
+    /**
+     * torbox caches this endpoint server side for about 600 seconds. [bypassCache] defaults to
+     * false so callers opt in to a live lookup instead of hitting the live database on every call;
+     * the foreground monitoring service polls this every few seconds while a torrent is loading,
+     * and paying the cost of a live lookup that often never bought any real time accuracy anyway
+     */
     @GET("torrents/mylist")
     suspend fun getTorrentsList(
         @Header("Authorization") token: String,
-        @Query("bypass_cache") bypassCache: Boolean = true,
+        @Query("bypass_cache") bypassCache: Boolean = false,
         @Query("offset") offset: Int? = null,
         @Query("limit") limit: Int? = null,
     ): Response<TorBoxTorrentListResponse>
