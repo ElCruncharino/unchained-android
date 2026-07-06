@@ -22,7 +22,7 @@ class ProwlarrRepository
 @Inject
 constructor(
     @param:ClassicClient private val client: OkHttpClient,
-    @ApplicationContext private val applicationContext: Context,
+    @param:ApplicationContext private val applicationContext: Context,
 ) {
     // todo: implement POST search with json body, as it is more flexible and allows to bypass url
     // length limits
@@ -82,10 +82,6 @@ constructor(
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
                         emit(ParserResult.SourceError)
-                        return@flow
-                    }
-                    if (response.body == null) {
-                        emit(ParserResult.NetworkBodyError)
                         return@flow
                     }
                     val body: String = response.body.string()
