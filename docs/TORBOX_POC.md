@@ -228,6 +228,43 @@ page, the new download screen and the list adapters now know about the two servi
   handed to external players, which a "[TorBox] " prefix would pollute; the names stay raw, which
   also keeps the search filter matching exactly what the user sees as the name.
 
+### Polish round: settings gating, recency ordering, less TorBox load
+
+- The "Add new torrents to" settings dropdown is now hidden unless both Real-Debrid and TorBox are
+  connected, the same condition `NewDownloadFragment.setupServiceChooser` already used to hide its
+  own toggle. With a single active service `TorrentApiHelperImpl.addTorrentsDestination` ignores
+  the preference entirely and always uses the only active service, so the dropdown used to sit in
+  Settings looking selectable while doing nothing. `SettingsViewModel` gained the same
+  `areBothServicesActive()` suspend check (backed by `TorBoxRepository`) used by
+  `NewDownloadViewModel`, checked once in `SettingsFragment.onCreatePreferences` since Settings is
+  its own activity opened fresh every time: no need to react to accounts being added or removed
+  while the screen is already open.
+- The merged torrents and downloads lists no longer show TorBox as a trailing block regardless of
+  how recent its items are: `TorrentApiHelperImpl.getTorrentsList` and
+  `DownloadApiHelperImpl.getDownloads` now sort the merged first page by parsed timestamp
+  (`added`/`generated`), newest first, so a TorBox item added an hour ago shows above a Real-Debrid
+  item from a week ago. The sort only runs when more than one source actually contributed rows
+  (skipped on later pages and for single service accounts) to avoid pointless parsing work.
+  `utilities/DateSorting.kt` adds a small shared `parseIsoInstantOrNull`/`sortedByRecencyDescending`
+  helper (tried as `Instant.parse` first, `OffsetDateTime.parse` as a fallback for looser ISO-8601
+  shapes) used by both helpers instead of duplicating date parsing three times; an unparsable or
+  missing date sorts last instead of crashing the merge. Covered by a unit test in
+  `DateSortingTest`.
+- `ForegroundTorrentService` polls `torrentRepository.getTorrentsList` every 5 seconds while
+  anything is loading, which always merged in the TorBox list through
+  `TorrentApiHelperImpl.getTorrentsList`. That call left `TorBoxApi.getTorrentsList`'s
+  `bypass_cache` query parameter at its default of `true`, so every 5 second poll forced TorBox to
+  skip its own ~600 second server side cache and hit its live database, for TorBox-only and mixed
+  account users alike. Threading a genuine "this is a user initiated pull to refresh" flag down to
+  that call would need touching the paging source, the repository and the api helper interface,
+  and the existing `torrentAdapter.refresh()` call is already reused for several non user triggered
+  refreshes (after deleting torrents, after list state changes), so there was no clean signal to
+  grab there anyway. `bypass_cache` now defaults to `false` on `TorBoxApi.getTorrentsList`, which is
+  the simpler and still correct fix: the monitoring loop (and any other caller that does not
+  explicitly ask for a live lookup) now rides TorBox's own cache instead of forcing a bypass on
+  every call, accepting up to ~600 seconds of staleness that polling every 5 seconds was never
+  actually beating anyway.
+
 ## What works
 
 - Login with a TorBox API key (own section on the login screen), Real-Debrid key or OAuth, in any
