@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!--
+    Cleartext is intentionally left permitted here for every domain. The app lets users
+    configure remote services (Jackett, Prowlarr, Kodi, VLC remotes, generic remote
+    devices/services) by typing an arbitrary host/IP and port, which very commonly points at a
+    self-hosted instance on a local network reachable only over plain HTTP. Those hosts cannot be
+    known or enumerated ahead of time, so a per-domain config here cannot scope this down without
+    breaking that legitimate use case.
+
+    The Real-Debrid REST API itself never needs cleartext, since its base URLs are hardcoded to
+    HTTPS. That is enforced independently at the OkHttp level: the client used for the
+    Real-Debrid API (see ApiFactory.provideRealDebridClient) does not include
+    ConnectionSpec.CLEARTEXT in its connection specs, so it can never fall back to an unencrypted
+    connection even though the platform-wide policy below would otherwise allow it.
+    -->
     <base-config cleartextTrafficPermitted="true">
     </base-config>
 </network-security-config>

@@ -206,10 +206,56 @@ object ApiFactory {
         return bootstrapClient.newBuilder().dns(dns).build()
     }
 
+    /**
+     * Client dedicated to the Real-Debrid REST API. [BASE_AUTH_URL] and [BASE_URL] are hardcoded
+     * HTTPS endpoints, so unlike [provideOkHttpClient] (which also backs local/self-hosted
+     * features such as Jackett, Prowlarr, Kodi and VLC remotes, where the user enters an arbitrary
+     * address that is often plain HTTP on a local network) this client intentionally does not
+     * include [ConnectionSpec.CLEARTEXT], so it can never fall back to an unencrypted connection.
+     */
+    @Provides
+    @Singleton
+    @RealDebridClient
+    fun provideRealDebridClient(): OkHttpClient {
+        if (BuildConfig.DEBUG) {
+            val logInterceptor: HttpLoggingInterceptor =
+                HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
+
+            return OkHttpClient()
+                .newBuilder()
+                .connectionSpecs(
+                    listOf(
+                        ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                            .allEnabledTlsVersions()
+                            .allEnabledCipherSuites()
+                            .build()
+                    )
+                )
+                // logs all the calls, removed in the release channel
+                .addInterceptor(logInterceptor)
+                // avoid issues with empty bodies on delete/put and 20x return codes
+                .addInterceptor(EmptyBodyInterceptor)
+                .build()
+        } else
+            return OkHttpClient()
+                .newBuilder()
+                .connectionSpecs(
+                    listOf(
+                        ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                            .allEnabledTlsVersions()
+                            .allEnabledCipherSuites()
+                            .build()
+                    )
+                )
+                // avoid issues with empty bodies on delete/put and 20x return codes
+                .addInterceptor(EmptyBodyInterceptor)
+                .build()
+    }
+
     @Provides
     @Singleton
     @AuthRetrofit
-    fun authRetrofit(@ClassicClient okHttpClient: OkHttpClient): Retrofit =
+    fun authRetrofit(@RealDebridClient okHttpClient: OkHttpClient): Retrofit =
         Retrofit.Builder()
             .client(okHttpClient)
             .baseUrl(BASE_AUTH_URL)
@@ -219,7 +265,7 @@ object ApiFactory {
     @Provides
     @Singleton
     @ApiRetrofit
-    fun apiRetrofit(@ClassicClient okHttpClient: OkHttpClient): Retrofit {
+    fun apiRetrofit(@RealDebridClient okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .client(okHttpClient)
             .baseUrl(BASE_URL)
