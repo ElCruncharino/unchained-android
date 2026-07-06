@@ -12,7 +12,9 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.preference.DropDownPreference
 import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
 import androidx.preference.Preference
@@ -22,6 +24,7 @@ import com.github.livingwithhippos.unchained.settings.viewmodel.SettingEvent
 import com.github.livingwithhippos.unchained.settings.viewmodel.SettingsViewModel
 import com.github.livingwithhippos.unchained.utilities.FEEDBACK_URL
 import com.github.livingwithhippos.unchained.utilities.GPLV3_URL
+import com.github.livingwithhippos.unchained.utilities.KEY_ADD_TORRENTS_PROVIDER
 import com.github.livingwithhippos.unchained.utilities.KEY_TORBOX_API_KEY
 import com.github.livingwithhippos.unchained.utilities.TORBOX_API_KEY_PATTERN
 import com.github.livingwithhippos.unchained.utilities.extension.getThemeList
@@ -29,6 +32,7 @@ import com.github.livingwithhippos.unchained.utilities.extension.openExternalWeb
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
@@ -121,6 +125,22 @@ class SettingsFragment : PreferenceFragmentCompat() {
             // SettingsFragmentDirections.actionSettingsFragmentToRemoteDeviceListFragment()
             findNavController().navigate(action)
             true
+        }
+
+        setupAddTorrentsProviderPreference()
+    }
+
+    /**
+     * the "Add new torrents to" preference only matters when both real debrid and torbox are
+     * logged in: with a single active service the api helper routing ignores it entirely, so hide
+     * it to avoid a control that looks like it does something but silently does nothing. Settings
+     * is its own activity opened fresh every time, so a single check here is enough, no need to
+     * react to accounts being added/removed while this screen is already open.
+     */
+    private fun setupAddTorrentsProviderPreference() {
+        lifecycleScope.launch {
+            val bothActive = viewModel.areBothServicesActive()
+            findPreference<DropDownPreference>(KEY_ADD_TORRENTS_PROVIDER)?.isVisible = bothActive
         }
     }
 
