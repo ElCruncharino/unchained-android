@@ -84,10 +84,6 @@ constructor(
                         emit(ParserResult.SourceError)
                         return@flow
                     }
-                    if (response.body == null) {
-                        emit(ParserResult.NetworkBodyError)
-                        return@flow
-                    }
                     val body: String = response.body.string()
                     try {
                         val results: List<ProwlarrResponse> = json.decodeFromString(body)

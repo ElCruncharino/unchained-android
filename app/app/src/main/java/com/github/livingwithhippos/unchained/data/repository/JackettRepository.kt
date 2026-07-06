@@ -117,10 +117,6 @@ constructor(
                         emit(ParserResult.SourceError)
                         return@flow
                     }
-                    if (response.body == null) {
-                        emit(ParserResult.NetworkBodyError)
-                        return@flow
-                    }
                     val body: String = response.body.string()
                     try {
                         val search: SearchRSS = parseSearchRss(body)
@@ -155,11 +151,7 @@ constructor(
                     return@withContext EitherResult.Failure(
                         IOException("Unexpected http code $response")
                     )
-                val body: String =
-                    response.body?.string()
-                        ?: return@withContext EitherResult.Failure(
-                            IOException("Unexpected empty body")
-                        )
+                val body: String = response.body.string()
                 try {
                     val capabilities: Capabilities =
                         parseCapabilities(body)
@@ -200,11 +192,7 @@ constructor(
                         return@withContext EitherResult.Failure(
                             IOException("Unexpected http code $response")
                         )
-                    val body: String =
-                        response.body?.string()
-                            ?: return@withContext EitherResult.Failure(
-                                IOException("Unexpected empty body")
-                            )
+                    val body: String = response.body.string()
                     try {
                         val indexers: Indexers =
                             parseIndexers(body)
