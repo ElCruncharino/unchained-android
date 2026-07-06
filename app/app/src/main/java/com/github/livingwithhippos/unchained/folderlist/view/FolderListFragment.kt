@@ -53,6 +53,22 @@ class FolderListFragment : UnchainedFragment(), DownloadListListener {
     private val mediaRegex =
         "\\.(webm|avi|mkv|ogg|MTS|M2TS|TS|mov|wmv|mp4|m4p|m4v|mp2|mpe|mpv|mpg|mpeg|m2v|3gp)$"
             .toRegex()
+
+    /**
+     * A query with * wildcards must match the whole file name, e.g. "*.mkv"; a plain query
+     * matches any part of it, same behavior as the torrent file selection screen's filter.
+     */
+    private fun matchesQuery(name: String, query: String): Boolean {
+        val regexQuery =
+            if (query.contains('*')) {
+                val pattern = query.split('*').joinToString(".*") { Regex.escape(it) }
+                Regex("^$pattern$", RegexOption.IGNORE_CASE)
+            } else {
+                Regex(Regex.escape(query), RegexOption.IGNORE_CASE)
+            }
+        return regexQuery.containsMatchIn(name)
+    }
+
     private var _binding: FragmentFolderListBinding? = null
     private val binding
         get() = _binding!!
@@ -393,9 +409,7 @@ class FolderListFragment : UnchainedFragment(), DownloadListListener {
                 customizedList.addAll(temp)
             }
             if (!filterQuery.isNullOrBlank()) {
-                val temp = customizedList.filter { item ->
-                    item.filename.contains(filterQuery, ignoreCase = true)
-                }
+                val temp = customizedList.filter { item -> matchesQuery(item.filename, filterQuery) }
                 customizedList.clear()
                 customizedList.addAll(temp)
             }
