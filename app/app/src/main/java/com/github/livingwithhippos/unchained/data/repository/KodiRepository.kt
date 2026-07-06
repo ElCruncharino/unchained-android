@@ -76,7 +76,7 @@ constructor(protoStore: ProtoStore, @param:ClassicClient private val client: OkH
         password: String? = null,
     ): KodiGenericResponse? {
         try {
-            val kodiApiHelper: KodiApiHelper = provideApiHelper(address)
+            val kodiApiHelper: KodiApiHelper = provideApiHelper(addHttpScheme(address))
             val kodiResponse =
                 safeApiCall(
                     call = {
@@ -143,9 +143,10 @@ constructor(protoStore: ProtoStore, @param:ClassicClient private val client: OkH
     ): KodiResponse? {
 
         try {
+            val schemedAddress = addHttpScheme(address)
             val kodiApiHelper: KodiApiHelper =
-                if (address.endsWith("/")) provideApiHelper(address)
-                else provideApiHelper("$address/")
+                if (schemedAddress.endsWith("/")) provideApiHelper(schemedAddress)
+                else provideApiHelper("$schemedAddress/")
 
             val kodiResponse =
                 safeApiCall(

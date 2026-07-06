@@ -14,6 +14,7 @@ import com.github.livingwithhippos.unchained.data.model.Repository
 import com.github.livingwithhippos.unchained.data.repository.ServiceRepository
 import com.github.livingwithhippos.unchained.utilities.DEFAULT_PLUGINS_REPOSITORY_LINK
 import com.github.livingwithhippos.unchained.utilities.TelemetryManager
+import com.github.livingwithhippos.unchained.utilities.addHttpScheme
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -71,7 +72,7 @@ class UnchainedApplication : Application() {
                         CompleteRemoteService(
                             id = 0,
                             name = it.name,
-                            address = "${device.address}:${it.port}",
+                            address = "${addHttpScheme(device.address)}:${it.port}",
                             username = it.username,
                             password = it.password,
                             type = it.type,
