@@ -1,14 +1,18 @@
 package com.github.livingwithhippos.unchained.user.viewmodel
 
+import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.livingwithhippos.unchained.data.local.ProtoStore
 import com.github.livingwithhippos.unchained.data.model.TorBoxUser
 import com.github.livingwithhippos.unchained.data.model.User
+import com.github.livingwithhippos.unchained.data.remote.torBoxApiKey
 import com.github.livingwithhippos.unchained.data.repository.TorBoxRepository
 import com.github.livingwithhippos.unchained.data.repository.UserRepository
 import com.github.livingwithhippos.unchained.utilities.Event
+import com.github.livingwithhippos.unchained.utilities.KEY_TORBOX_API_KEY
 import com.github.livingwithhippos.unchained.utilities.PRIVATE_TOKEN
 import com.github.livingwithhippos.unchained.utilities.postEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +32,7 @@ constructor(
     private val torBoxRepository: TorBoxRepository,
     private val userRepository: UserRepository,
     private val protoStore: ProtoStore,
+    private val preferences: SharedPreferences,
 ) : ViewModel() {
 
     val realDebridActiveLiveData = MutableLiveData<Boolean>()
@@ -83,6 +88,49 @@ constructor(
             }
         }
     }
+
+    /** true when the stored login token belongs to real debrid */
+    suspend fun isRealDebridActive(): Boolean = torBoxRepository.isRealDebridActive()
+
+    /** true when a torbox api key is available, from the preference or the main login */
+    suspend fun isTorBoxActive(): Boolean = torBoxRepository.isTorBoxActive()
+
+    /**
+     * Disconnects torbox from its user page card while real debrid is the main login: only the
+     * api key preference is cleared, matching what blanking the settings field does. The
+     * datastore credentials and the state machine are left completely untouched. Only call this
+     * when [isRealDebridActive] is true, otherwise this would leave no service connected and a
+     * full logout should happen instead
+     */
+    fun disconnectTorBox() {
+        preferences.edit { remove(KEY_TORBOX_API_KEY) }
+        eventLiveData.postEvent(UserProfileEvent.ServiceDisconnected)
+    }
+
+    /**
+     * Disconnects real debrid from its user page card while torbox is connected as a secondary
+     * account: torbox is promoted to the main login by storing its api key as the datastore
+     * private token, the same sentinel fields the connect torbox flow already uses when nothing
+     * else is logged in. No state machine event is needed: this only runs while the machine is
+     * already authenticated with a private token, and a torbox key is a private token login too.
+     * Only call this when [isTorBoxActive] is true, otherwise this would leave no service
+     * connected and a full logout should happen instead
+     */
+    fun disconnectRealDebrid() {
+        viewModelScope.launch {
+            val torBoxKey = preferences.torBoxApiKey()
+            if (torBoxKey != null) {
+                protoStore.setCredentials(
+                    deviceCode = PRIVATE_TOKEN,
+                    clientId = PRIVATE_TOKEN,
+                    clientSecret = PRIVATE_TOKEN,
+                    accessToken = torBoxKey,
+                    refreshToken = PRIVATE_TOKEN,
+                )
+            }
+            eventLiveData.postEvent(UserProfileEvent.ServiceDisconnected)
+        }
+    }
 }
 
 sealed class TorBoxAccountStatus {
@@ -97,4 +145,6 @@ sealed class UserProfileEvent {
     data object RealDebridConnected : UserProfileEvent()
 
     data object RealDebridTokenError : UserProfileEvent()
+
+    data object ServiceDisconnected : UserProfileEvent()
 }
