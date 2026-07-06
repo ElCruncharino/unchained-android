@@ -107,6 +107,14 @@ LWeoBVVmaYAiZ3oGaLAV9sV2dvY62XxdCF
 
 ### Credits :crown:
 
+#### Contributors
+
+- [ashishch432](https://github.com/ashishch432)
+- [IzzySoft](https://github.com/IzzySoft)
+- [morpheasgr](https://github.com/morpheasgr)
+- [Poussinou](https://github.com/Poussinou)
+- [Trukmuch](https://github.com/Trukmuch)
+
 #### Beta testers
 
 - Oathzed
