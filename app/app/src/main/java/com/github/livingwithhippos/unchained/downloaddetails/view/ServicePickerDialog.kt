@@ -66,13 +66,13 @@ class ServicePickerDialog : DialogFragment(), ServicePickerListener {
         } ?: throw IllegalStateException("Activity cannot be null")
     }
 
-    override fun onServiceClick(serviceDetails: CompleteRemoteServiceDetails) {
+    override fun onServiceClick(service: CompleteRemoteServiceDetails) {
         val link = arguments?.getString("downloadUrl")
         if (link == null) {
             Timber.e("Download url is null")
             context?.showToast(R.string.error)
         } else {
-            viewModel.openOnRemoteService(serviceDetails, link)
+            viewModel.openOnRemoteService(service, link)
             // show toast?
         }
         this.dismiss()
