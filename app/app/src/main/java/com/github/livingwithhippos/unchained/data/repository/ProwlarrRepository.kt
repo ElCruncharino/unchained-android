@@ -22,7 +22,7 @@ class ProwlarrRepository
 @Inject
 constructor(
     @param:ClassicClient private val client: OkHttpClient,
-    @ApplicationContext private val applicationContext: Context,
+    @param:ApplicationContext private val applicationContext: Context,
 ) {
     // todo: implement POST search with json body, as it is more flexible and allows to bypass url
     // length limits

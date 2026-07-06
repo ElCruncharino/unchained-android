@@ -29,7 +29,7 @@ class JackettRepository
 @Inject
 constructor(
     @param:ClassicClient private val client: OkHttpClient,
-    @ApplicationContext private val applicationContext: Context,
+    @param:ApplicationContext private val applicationContext: Context,
 ) {
 
     private fun getBasicApi(
