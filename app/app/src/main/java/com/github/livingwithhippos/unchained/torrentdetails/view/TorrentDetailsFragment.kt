@@ -288,8 +288,8 @@ class TorrentDetailsFragment : UnchainedFragment(), TorrentContentListener {
             val action =
                 TorrentDetailsFragmentDirections.actionTorrentDetailsToTorrentFolder(
                     folder = null,
-                    torrent = item,
-                    linkList = null,
+                    filename = item.filename,
+                    linkList = item.links.toTypedArray(),
                 )
             findNavController().navigate(action)
         } else {

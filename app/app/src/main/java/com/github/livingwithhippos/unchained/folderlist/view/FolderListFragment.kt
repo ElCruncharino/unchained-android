@@ -306,14 +306,15 @@ class FolderListFragment : UnchainedFragment(), DownloadListListener {
             showSortingPopup(it, R.menu.folder_sorting_popup, adapter, binding.rvFolderList)
         }
 
+        // only the small pieces actually needed here (filename, links) are passed via
+        // navigation instead of the full TorrentItem, which can carry a very large embedded
+        // file list and previously bloated this screen's saved state past Android's binder
+        // transaction size limit, crashing the app for torrents with many files
+        args.filename?.let { binding.tvTitle.text = it }
+
         // load all the links
         when {
             args.folder != null -> viewModel.retrieveFolderFileList(args.folder!!)
-            args.torrent != null -> {
-                binding.tvTitle.text = args.torrent!!.filename
-                viewModel.retrieveFiles(args.torrent!!.links)
-            }
-
             args.linkList != null -> {
                 viewModel.retrieveFiles(args.linkList!!.toList())
             }

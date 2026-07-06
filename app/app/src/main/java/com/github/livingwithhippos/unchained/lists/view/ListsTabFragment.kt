@@ -247,8 +247,8 @@ class ListsTabFragment : UnchainedFragment() {
                                         ListsTabFragmentDirections
                                             .actionListTabsDestToFolderListFragment2(
                                                 folder = null,
-                                                torrent = event.item,
-                                                linkList = null,
+                                                filename = event.item.filename,
+                                                linkList = event.item.links.toTypedArray(),
                                             )
                                     findNavController().navigate(action)
                                 } else viewModel.unrestrictTorrent(event.item)
@@ -885,8 +885,8 @@ class TorrentsListFragment : UnchainedFragment(), TorrentListListener {
                     val action =
                         ListsTabFragmentDirections.actionListTabsDestToFolderListFragment2(
                             folder = null,
-                            torrent = item,
-                            linkList = null,
+                            filename = item.filename,
+                            linkList = item.links.toTypedArray(),
                         )
                     if (controller.currentDestination?.id == R.id.list_tabs_dest)
                         controller.navigate(action)

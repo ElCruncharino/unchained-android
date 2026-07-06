@@ -164,7 +164,6 @@ class NewDownloadFragment : UnchainedFragment() {
                 val action =
                     NewDownloadFragmentDirections.actionNewDownloadDestToFolderListFragment(
                         folder = folder,
-                        torrent = null,
                         linkList = null,
                     )
                 findNavController().navigate(action)
@@ -182,7 +181,6 @@ class NewDownloadFragment : UnchainedFragment() {
                             NewDownloadFragmentDirections.actionNewDownloadDestToFolderListFragment(
                                 linkList = link.links.toTypedArray(),
                                 folder = null,
-                                torrent = null,
                             )
                         findNavController().navigate(action)
                     }
@@ -434,7 +432,6 @@ class NewDownloadFragment : UnchainedFragment() {
                 val action =
                     NewDownloadFragmentDirections.actionNewDownloadDestToFolderListFragment(
                         folder = null,
-                        torrent = null,
                         linkList = multipleLinks.toTypedArray(),
                     )
                 findNavController().navigate(action)
