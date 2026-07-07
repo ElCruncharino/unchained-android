@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.github.livingwithhippos.unchained.R
+import com.github.livingwithhippos.unchained.authentication.LocalTokenServer
 import com.github.livingwithhippos.unchained.base.UnchainedFragment
 import com.github.livingwithhippos.unchained.data.model.APIError
 import com.github.livingwithhippos.unchained.data.model.EmptyBodyError
@@ -42,6 +43,8 @@ import com.github.livingwithhippos.unchained.utilities.extension.isContainerWebL
 import com.github.livingwithhippos.unchained.utilities.extension.isMagnet
 import com.github.livingwithhippos.unchained.utilities.extension.isSimpleWebUrl
 import com.github.livingwithhippos.unchained.utilities.extension.isTorrent
+import com.github.livingwithhippos.unchained.utilities.extension.isTv
+import com.github.livingwithhippos.unchained.utilities.extension.loadQrCode
 import com.github.livingwithhippos.unchained.utilities.extension.isWebUrl
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.IOException
@@ -66,6 +69,9 @@ class NewDownloadFragment : UnchainedFragment() {
     private val binding
         get() = _binding!!
 
+    // temporary server used on TV to receive the link or magnet from another device
+    private var linkServer: LocalTokenServer? = null
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -80,9 +86,81 @@ class NewDownloadFragment : UnchainedFragment() {
         return binding.root
     }
 
+    override fun onStart() {
+        super.onStart()
+        // typing a magnet or a link with a remote is the worst TV interaction in the app: run a
+        // temporary server on the local network so the link can be sent from another device,
+        // e.g. the user's phone, like the authentication screen does for the private token
+        if (requireContext().isTv()) startLinkServer()
+    }
+
+    override fun onStop() {
+        linkServer?.stop()
+        linkServer = null
+        super.onStop()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    /**
+     * Start a temporary http server receiving a link or magnet from the local network and show
+     * its address, PIN and a QR code for the address on screen. The server accepts a single
+     * submission, protected by the displayed PIN, and is stopped when this screen is left, see
+     * [onStop]. The received link only fills the input field, exactly as if it had been typed:
+     * the user still presses the download or upload button themselves.
+     */
+    private fun startLinkServer() {
+        val server =
+            LocalTokenServer(
+                LocalTokenServer.Pages(
+                    title = getString(R.string.app_name),
+                    fieldLabel = getString(R.string.link_or_magnet),
+                    pinLabel = getString(R.string.token_web_pin_label),
+                    submitLabel = getString(R.string.send),
+                    successMessage = getString(R.string.link_web_received),
+                    errorMessage = getString(R.string.invalid_url),
+                    wrongPinMessage = getString(R.string.token_web_wrong_pin),
+                ),
+                // same checks used by the paste button
+                isValueValid = { value ->
+                    value.isWebUrl() ||
+                        value.isSimpleWebUrl() ||
+                        value.isMagnet() ||
+                        value.isTorrent() ||
+                        value.split("\n").firstOrNull()?.trim()?.isWebUrl() == true
+                },
+                onValueReceived = { link ->
+                    // the server delivers the value on a background thread
+                    _binding?.root?.post {
+                        if (_binding == null) return@post
+                        binding.tiLink.setText(link, TextView.BufferType.EDITABLE)
+                    }
+                },
+                onStopped = {
+                    // the server stopped itself (timeout, too many wrong PINs or link received):
+                    // remove the stale address from the screen
+                    _binding?.root?.post {
+                        if (_binding == null) return@post
+                        binding.tvLinkServerMessage.visibility = View.GONE
+                        binding.ivLinkServerQrCode.visibility = View.GONE
+                    }
+                },
+            )
+        val address = server.start()
+        if (address != null) {
+            linkServer = server
+            binding.tvLinkServerMessage.text =
+                getString(R.string.send_link_from_phone_format, address) +
+                    "\n" +
+                    getString(R.string.token_server_pin_format, server.pin)
+            binding.tvLinkServerMessage.visibility = View.VISIBLE
+            binding.ivLinkServerQrCode.loadQrCode(address, viewLifecycleOwner.lifecycleScope)
+        } else {
+            Timber.w("The local link server could not be started")
+        }
     }
 
     private fun setupObservers(binding: NewDownloadFragmentBinding) {

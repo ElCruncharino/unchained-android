@@ -15,45 +15,52 @@ import kotlin.concurrent.thread
 import timber.log.Timber
 
 /**
- * Minimal, temporary HTTP server used on Android TV to receive the private Real-Debrid token from
- * another device on the same local network (e.g. the user's phone), since typing it with a remote
- * is painful. It serves a single form page and accepts one valid token submission, after which it
- * stops itself. It must also be stopped when the authentication screen is left.
+ * Minimal, temporary HTTP server used on Android TV to receive a single text value from another
+ * device on the same local network (e.g. the user's phone), since typing with a remote is painful.
+ * The authentication screen uses it for the private Real-Debrid token and the new download screen
+ * for a link or magnet. It serves a single form page and accepts one valid submission, after which
+ * it stops itself. It must also be stopped when the screen that started it is left.
  *
  * Security model, following what LocalSend does for its browser flows and what went wrong with
  * always-on unauthenticated servers like the ES File Explorer one (CVE-2019-6447):
- * - it only runs while the authentication screen is visible, and stops itself after
- *   [SERVER_LIFETIME_MS] anyway
+ * - it only runs while its screen is visible, and stops itself after [SERVER_LIFETIME_MS] anyway
  * - it binds only to the local network interface, never to all the interfaces
  * - submissions must include the random [pin] displayed on the TV, so neither another host on the
- *   network nor a malicious web page loaded on one (CSRF/DNS rebinding) can plant its own token
- * - it stops after [MAX_PIN_FAILURES] wrong PINs or after the first valid token
+ *   network nor a malicious web page loaded on one (CSRF/DNS rebinding) can plant its own value
+ * - it stops after [MAX_PIN_FAILURES] wrong PINs or after the first valid submission
  * - it never sends any data out except the static form page
  *
- * The token travels in plain http on the local network, which is acceptable for a short lived,
+ * The value travels in plain http on the local network, which is acceptable for a short lived,
  * PIN protected server: TLS would require a self signed certificate that phone browsers refuse.
  *
  * @param pages localized texts used to build the served web pages
- * @param onTokenReceived called with the submitted token, from a background thread
- * @param onStopped called when the server stops itself (timeout, too many wrong PINs or token
+ * @param isValueValid decides whether a submitted value is acceptable; rejected values get the
+ *   error page and the server keeps waiting
+ * @param onValueReceived called with the submitted value, from a background thread
+ * @param onStopped called when the server stops itself (timeout, too many wrong PINs or value
  *   received), from a background thread. Not called by [stop].
  */
 class LocalTokenServer(
     private val pages: Pages,
-    private val onTokenReceived: (String) -> Unit,
+    private val isValueValid: (String) -> Boolean,
+    private val onValueReceived: (String) -> Unit,
     private val onStopped: () -> Unit = {},
 ) {
 
-    /** Localized texts for the served pages */
+    /**
+     * Localized texts for the served pages. When [linkUrl] and [linkLabel] are set, a plain link
+     * is shown above the form, e.g. the Real-Debrid token page for the authentication flow.
+     */
     data class Pages(
         val title: String,
-        val tokenLabel: String,
-        val tokenLinkLabel: String,
+        val fieldLabel: String,
         val pinLabel: String,
         val submitLabel: String,
         val successMessage: String,
         val errorMessage: String,
         val wrongPinMessage: String,
+        val linkUrl: String? = null,
+        val linkLabel: String? = null,
     )
 
     /** The PIN that must be typed in the served form, to be displayed on the TV */
@@ -99,8 +106,8 @@ class LocalTokenServer(
                 if (result == RequestResult.WRONG_PIN) pinFailures++
                 val quit =
                     when {
-                        // a valid token was received, only one submission is accepted
-                        result == RequestResult.TOKEN_RECEIVED -> true
+                        // a valid value was received, only one submission is accepted
+                        result == RequestResult.VALUE_RECEIVED -> true
                         // too many wrong PINs, stop instead of allowing a brute force
                         pinFailures >= MAX_PIN_FAILURES -> true
                         // don't run forever if the screen stays open
@@ -121,7 +128,7 @@ class LocalTokenServer(
     private enum class RequestResult {
         NONE,
         WRONG_PIN,
-        TOKEN_RECEIVED,
+        VALUE_RECEIVED,
     }
 
     /** Serve a single http request: the form page on GET /, the form processing on POST / */
@@ -149,18 +156,17 @@ class LocalTokenServer(
                     method.equals("GET", ignoreCase = true) -> Response(200, formPage())
                     method.equals("POST", ignoreCase = true) -> {
                         val fields = readForm(reader, contentLength)
-                        val token = fields["token"]?.trim()
+                        val value = fields["value"]?.trim()
                         when {
                             !isPinValid(fields["pin"]?.trim()) -> {
                                 result = RequestResult.WRONG_PIN
                                 Response(401, messagePage(pages.wrongPinMessage))
                             }
-                            // same minimum length checked by the manual token field
-                            token == null || token.length < MIN_TOKEN_LENGTH ->
+                            value.isNullOrBlank() || !isValueValid(value) ->
                                 Response(200, messagePage(pages.errorMessage))
                             else -> {
-                                result = RequestResult.TOKEN_RECEIVED
-                                onTokenReceived(token)
+                                result = RequestResult.VALUE_RECEIVED
+                                onValueReceived(value)
                                 Response(200, messagePage(pages.successMessage))
                             }
                         }
@@ -261,24 +267,31 @@ class LocalTokenServer(
         return null
     }
 
-    private fun formPage(): String =
-        """
+    private fun formPage(): String {
+        val link =
+            if (pages.linkUrl != null && pages.linkLabel != null)
+                // CSP only restricts what the page loads or submits, not plain link navigation
+                """<p><a href="${pages.linkUrl.escapeHtml()}" target="_blank" rel="noopener">""" +
+                    """${pages.linkLabel.escapeHtml()}</a></p>"""
+            else ""
+        return """
         <!DOCTYPE html>
         <html><head><meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>${pages.title.escapeHtml()}</title>
         <style>$PAGE_STYLE</style></head>
         <body><h2>${pages.title.escapeHtml()}</h2>
-        <p><a href="$TOKEN_URL" target="_blank" rel="noopener">${pages.tokenLinkLabel.escapeHtml()}</a></p>
+        $link
         <form method="post" action="/">
-        <label for="token">${pages.tokenLabel.escapeHtml()}</label>
-        <input type="text" id="token" name="token" autocomplete="off" autofocus>
+        <label for="value">${pages.fieldLabel.escapeHtml()}</label>
+        <input type="text" id="value" name="value" autocomplete="off" autofocus>
         <label for="pin">${pages.pinLabel.escapeHtml()}</label>
         <input type="text" id="pin" name="pin" inputmode="numeric" autocomplete="off">
         <button type="submit">${pages.submitLabel.escapeHtml()}</button>
         </form></body></html>
         """
             .trimIndent()
+    }
 
     private fun messagePage(message: String): String =
         """
@@ -305,12 +318,6 @@ class LocalTokenServer(
         private const val MAX_PIN_FAILURES = 5
         private const val MAX_REQUEST_LINE_LENGTH = 2000
         private const val MAX_BODY_LENGTH = 10_000
-        // same minimum used by AuthenticationFragment for the manual input
-        private const val MIN_TOKEN_LENGTH = 40
-        // the same page the app links from "get your private token": opening it on the phone
-        // lets the user log in, copy the token and paste it in the form below. CSP only
-        // restricts what the page itself loads or submits, not plain link navigation.
-        private const val TOKEN_URL = "https://real-debrid.com/apitoken"
         private const val PAGE_STYLE =
             "body{font-family:sans-serif;margin:8vh auto;max-width:26em;padding:0 1em;" +
                 "background:#121212;color:#eee}" +
