@@ -13,6 +13,8 @@
     <string name="login_qr_code_description">Giriş yapmak için QR kodunu telefonunuzla tarayın</string>
     <string name="send_token_from_phone_format">Jetonu telefonunuzdan %s adresini açarak da gönderebilirsiniz</string>
     <string name="token_web_received">Jeton alındı, TV\'nizden devam edin</string>
+    <string name="token_web_pin_label">TV\'de gösterilen PIN</string>
+    <string name="token_web_wrong_pin">PIN yanlış, TV\'nizi kontrol edin</string>
     <string name="obtained_token">Jeton alındı</string>
     <string name="waiting_link">Yetkilendirme bağlantısı yükleniyor</string>
     <string name="link_loaded">Yetkilendirme bağlantısı yüklendi</string>

@@ -292,8 +292,9 @@ class AuthenticationFragment : UnchainedFragment() {
 
     /**
      * Start a temporary http server receiving the private token from the local network and show
-     * its address on screen, both as text and as a QR code. The server accepts a single token and
-     * is stopped when this screen is left, see [onStop].
+     * its address and PIN on screen, plus a QR code for the address. The server accepts a single
+     * token, protected by the displayed PIN, and is stopped when this screen is left, see
+     * [onStop].
      */
     private fun startTokenServer() {
         val server =
@@ -301,23 +302,37 @@ class AuthenticationFragment : UnchainedFragment() {
                 LocalTokenServer.Pages(
                     title = getString(R.string.app_name),
                     tokenLabel = getString(R.string.private_token),
+                    pinLabel = getString(R.string.token_web_pin_label),
                     submitLabel = getString(R.string.save),
                     successMessage = getString(R.string.token_web_received),
                     errorMessage = getString(R.string.invalid_token),
-                )
-            ) { token ->
-                // the server delivers the token on a background thread
-                _binding?.root?.post {
-                    if (_binding == null) return@post
-                    binding.tiPrivateCode.setText(token, TextView.BufferType.EDITABLE)
-                    onSaveCodeClick(binding.tiPrivateCode)
-                }
-            }
+                    wrongPinMessage = getString(R.string.token_web_wrong_pin),
+                ),
+                onTokenReceived = { token ->
+                    // the server delivers the token on a background thread
+                    _binding?.root?.post {
+                        if (_binding == null) return@post
+                        binding.tiPrivateCode.setText(token, TextView.BufferType.EDITABLE)
+                        onSaveCodeClick(binding.tiPrivateCode)
+                    }
+                },
+                onStopped = {
+                    // the server stopped itself (timeout, too many wrong PINs or token
+                    // received): remove the stale address from the screen
+                    _binding?.root?.post {
+                        if (_binding == null) return@post
+                        binding.tvTokenServerMessage.visibility = View.GONE
+                        binding.ivTokenServerQrCode.visibility = View.GONE
+                    }
+                },
+            )
         val address = server.start()
         if (address != null) {
             tokenServer = server
             binding.tvTokenServerMessage.text =
-                getString(R.string.send_token_from_phone_format, address)
+                getString(R.string.send_token_from_phone_format, address) +
+                    "\n" +
+                    getString(R.string.token_server_pin_format, server.pin)
             binding.tvTokenServerMessage.visibility = View.VISIBLE
             showQrCode(binding.ivTokenServerQrCode, address)
         } else {
