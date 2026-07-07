@@ -11,11 +11,13 @@ import android.text.style.UnderlineSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.github.livingwithhippos.unchained.R
+import com.github.livingwithhippos.unchained.authentication.LocalTokenServer
 import com.github.livingwithhippos.unchained.authentication.viewmodel.AuthenticationViewModel
 import com.github.livingwithhippos.unchained.authentication.viewmodel.SecretResult
 import com.github.livingwithhippos.unchained.base.UnchainedFragment
@@ -51,6 +53,9 @@ class AuthenticationFragment : UnchainedFragment() {
     private var _binding: FragmentAuthenticationBinding? = null
     private val binding
         get() = _binding!!
+
+    // temporary server used on TV to receive the private token from another device
+    private var tokenServer: LocalTokenServer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -177,7 +182,10 @@ class AuthenticationFragment : UnchainedFragment() {
                 // TVs have no browser and typing the link with a remote is painful: show a QR
                 // code that can be scanned with a phone to authorize the app from there
                 if (requireContext().isTv()) {
-                    showLoginQrCode(auth.directVerificationUrl.ifBlank { auth.verificationUrl })
+                    showQrCode(
+                        binding.ivLoginQrCode,
+                        auth.directVerificationUrl.ifBlank { auth.verificationUrl },
+                    )
                 }
                 // update the currently saved credentials
                 activityViewModel.updateCredentialsDeviceCode(auth.deviceCode)
@@ -264,9 +272,57 @@ class AuthenticationFragment : UnchainedFragment() {
         return binding.root
     }
 
+    override fun onStart() {
+        super.onStart()
+        // typing a long token with a remote is painful: on TV run a temporary server on the
+        // local network so the token can be sent from another device, e.g. the user's phone
+        if (requireContext().isTv()) startTokenServer()
+    }
+
+    override fun onStop() {
+        tokenServer?.stop()
+        tokenServer = null
+        super.onStop()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    /**
+     * Start a temporary http server receiving the private token from the local network and show
+     * its address on screen, both as text and as a QR code. The server accepts a single token and
+     * is stopped when this screen is left, see [onStop].
+     */
+    private fun startTokenServer() {
+        val server =
+            LocalTokenServer(
+                LocalTokenServer.Pages(
+                    title = getString(R.string.app_name),
+                    tokenLabel = getString(R.string.private_token),
+                    submitLabel = getString(R.string.save),
+                    successMessage = getString(R.string.token_web_received),
+                    errorMessage = getString(R.string.invalid_token),
+                )
+            ) { token ->
+                // the server delivers the token on a background thread
+                _binding?.root?.post {
+                    if (_binding == null) return@post
+                    binding.tiPrivateCode.setText(token, TextView.BufferType.EDITABLE)
+                    onSaveCodeClick(binding.tiPrivateCode)
+                }
+            }
+        val address = server.start()
+        if (address != null) {
+            tokenServer = server
+            binding.tvTokenServerMessage.text =
+                getString(R.string.send_token_from_phone_format, address)
+            binding.tvTokenServerMessage.visibility = View.VISIBLE
+            showQrCode(binding.ivTokenServerQrCode, address)
+        } else {
+            Timber.w("The local token server could not be started")
+        }
     }
 
     private fun getLoginMessage(type: Int): SpannableStringBuilder {
@@ -293,14 +349,14 @@ class AuthenticationFragment : UnchainedFragment() {
         return sb
     }
 
-    /** Render [url] as a QR code and display it in the login QR ImageView. */
-    private fun showLoginQrCode(url: String) {
+    /** Render [content] as a QR code and display it in [target], making it visible. */
+    private fun showQrCode(target: ImageView, content: String) {
         val sizePx = (QR_CODE_SIZE_DP * resources.displayMetrics.density).toInt()
         viewLifecycleOwner.lifecycleScope.launch {
-            val qrCode = withContext(Dispatchers.Default) { generateQrCode(url, sizePx) }
+            val qrCode = withContext(Dispatchers.Default) { generateQrCode(content, sizePx) }
             if (qrCode != null && _binding != null) {
-                binding.ivLoginQrCode.setImageBitmap(qrCode)
-                binding.ivLoginQrCode.visibility = View.VISIBLE
+                target.setImageBitmap(qrCode)
+                target.visibility = View.VISIBLE
             }
         }
     }

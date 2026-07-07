@@ -11,6 +11,8 @@
     <string name="waiting_secret">Secret 키 대기 중</string>
     <string name="waiting_token">토큰 확인 대기 중</string>
     <string name="login_qr_code_description">휴대폰으로 QR 코드를 스캔하여 로그인하세요</string>
+    <string name="send_token_from_phone_format">휴대폰에서 %s 주소를 열어 토큰을 보낼 수도 있습니다</string>
+    <string name="token_web_received">토큰을 받았습니다. TV에서 계속하세요</string>
     <string name="obtained_token">토큰 획득</string>
     <string name="waiting_link">인증 링크 로딩 중</string>
     <string name="link_loaded">인증 링크 로드됨</string>

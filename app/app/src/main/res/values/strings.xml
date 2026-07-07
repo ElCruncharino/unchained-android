@@ -17,6 +17,8 @@
     <string name="waiting_secret">Waiting Secret</string>
     <string name="waiting_token">Waiting token confirmation</string>
     <string name="login_qr_code_description">Scan the QR code with your phone to log in</string>
+    <string name="send_token_from_phone_format">You can also send the token from your phone by opening %s</string>
+    <string name="token_web_received">Token received, continue on your TV</string>
     <string name="obtained_token">Obtained token</string>
     <string name="waiting_link">Loading authorization link</string>
     <string name="link_loaded">Authorization link loaded</string>
