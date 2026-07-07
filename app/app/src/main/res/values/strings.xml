@@ -16,6 +16,7 @@
     <string name="obtained_user_auth">Obtained user authorization</string>
     <string name="waiting_secret">Waiting Secret</string>
     <string name="waiting_token">Waiting token confirmation</string>
+    <string name="login_qr_code_description">Scan the QR code with your phone to log in</string>
     <string name="obtained_token">Obtained token</string>
     <string name="waiting_link">Loading authorization link</string>
     <string name="link_loaded">Authorization link loaded</string>

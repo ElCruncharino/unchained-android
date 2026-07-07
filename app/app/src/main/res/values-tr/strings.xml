@@ -10,6 +10,7 @@
     <string name="obtained_user_auth">Kullanıcı yetkilendirmesi alındı</string>
     <string name="waiting_secret">Gizli anahtar bekleniyor</string>
     <string name="waiting_token">Jeton onayı bekleniyor</string>
+    <string name="login_qr_code_description">Giriş yapmak için QR kodunu telefonunuzla tarayın</string>
     <string name="obtained_token">Jeton alındı</string>
     <string name="waiting_link">Yetkilendirme bağlantısı yükleniyor</string>
     <string name="link_loaded">Yetkilendirme bağlantısı yüklendi</string>
