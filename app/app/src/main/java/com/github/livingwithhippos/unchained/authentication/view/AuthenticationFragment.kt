@@ -1,7 +1,5 @@
 package com.github.livingwithhippos.unchained.authentication.view
 
-import android.graphics.Bitmap
-import android.graphics.Color
 import android.os.Bundle
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
@@ -11,7 +9,6 @@ import android.text.style.UnderlineSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -31,15 +28,11 @@ import com.github.livingwithhippos.unchained.utilities.extension.getClipboardTex
 import com.github.livingwithhippos.unchained.utilities.extension.getThemeColor
 import com.github.livingwithhippos.unchained.utilities.extension.hideKeyboard
 import com.github.livingwithhippos.unchained.utilities.extension.isTv
+import com.github.livingwithhippos.unchained.utilities.extension.loadQrCode
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
 import com.google.android.material.textfield.TextInputEditText
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.EncodeHintType
-import com.google.zxing.qrcode.QRCodeWriter
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 /**
@@ -182,9 +175,9 @@ class AuthenticationFragment : UnchainedFragment() {
                 // TVs have no browser and typing the link with a remote is painful: show a QR
                 // code that can be scanned with a phone to authorize the app from there
                 if (requireContext().isTv()) {
-                    showQrCode(
-                        binding.ivLoginQrCode,
+                    binding.ivLoginQrCode.loadQrCode(
                         auth.directVerificationUrl.ifBlank { auth.verificationUrl },
+                        viewLifecycleOwner.lifecycleScope,
                     )
                 }
                 // update the currently saved credentials
@@ -301,15 +294,18 @@ class AuthenticationFragment : UnchainedFragment() {
             LocalTokenServer(
                 LocalTokenServer.Pages(
                     title = getString(R.string.app_name),
-                    tokenLabel = getString(R.string.private_token),
-                    tokenLinkLabel = getString(R.string.token_web_get_token_link),
+                    fieldLabel = getString(R.string.private_token),
                     pinLabel = getString(R.string.token_web_pin_label),
                     submitLabel = getString(R.string.save),
                     successMessage = getString(R.string.token_web_received),
                     errorMessage = getString(R.string.invalid_token),
                     wrongPinMessage = getString(R.string.token_web_wrong_pin),
+                    linkUrl = API_TOKEN_URL,
+                    linkLabel = getString(R.string.token_web_get_token_link),
                 ),
-                onTokenReceived = { token ->
+                // same minimum length checked by the manual token field
+                isValueValid = { it.length >= MIN_TOKEN_LENGTH },
+                onValueReceived = { token ->
                     // the server delivers the token on a background thread
                     _binding?.root?.post {
                         if (_binding == null) return@post
@@ -335,7 +331,7 @@ class AuthenticationFragment : UnchainedFragment() {
                     "\n" +
                     getString(R.string.token_server_pin_format, server.pin)
             binding.tvTokenServerMessage.visibility = View.VISIBLE
-            showQrCode(binding.ivTokenServerQrCode, address)
+            binding.ivTokenServerQrCode.loadQrCode(address, viewLifecycleOwner.lifecycleScope)
         } else {
             Timber.w("The local token server could not be started")
         }
@@ -365,50 +361,9 @@ class AuthenticationFragment : UnchainedFragment() {
         return sb
     }
 
-    /** Render [content] as a QR code and display it in [target], making it visible. */
-    private fun showQrCode(target: ImageView, content: String) {
-        val sizePx = (QR_CODE_SIZE_DP * resources.displayMetrics.density).toInt()
-        viewLifecycleOwner.lifecycleScope.launch {
-            val qrCode = withContext(Dispatchers.Default) { generateQrCode(content, sizePx) }
-            if (qrCode != null && _binding != null) {
-                target.setImageBitmap(qrCode)
-                target.visibility = View.VISIBLE
-            }
-        }
-    }
-
-    /**
-     * Generate a QR code [Bitmap] encoding [content], around [sizePx] pixels wide, with a quiet
-     * zone around it. Returns null if the code could not be generated.
-     */
-    private fun generateQrCode(content: String, sizePx: Int): Bitmap? =
-        try {
-            val matrix =
-                QRCodeWriter()
-                    .encode(
-                        content,
-                        BarcodeFormat.QR_CODE,
-                        sizePx,
-                        sizePx,
-                        mapOf(EncodeHintType.MARGIN to QR_QUIET_ZONE_MODULES),
-                    )
-            val pixels = IntArray(matrix.width * matrix.height)
-            for (y in 0 until matrix.height) {
-                for (x in 0 until matrix.width) {
-                    pixels[y * matrix.width + x] =
-                        if (matrix.get(x, y)) Color.BLACK else Color.WHITE
-                }
-            }
-            Bitmap.createBitmap(pixels, matrix.width, matrix.height, Bitmap.Config.RGB_565)
-        } catch (e: Exception) {
-            Timber.e(e, "Error generating the login QR code")
-            null
-        }
-
     fun onSaveCodeClick(codeInputField: TextInputEditText) {
         val token: String = codeInputField.text.toString().trim()
-        // mine is 52 characters
-        if (token.length < 40) context?.showToast(R.string.invalid_token)
+        if (token.length < MIN_TOKEN_LENGTH) context?.showToast(R.string.invalid_token)
         else {
             // pass the value to be checked and eventually saved
             activityViewModel.updateCredentials(
@@ -426,8 +381,9 @@ class AuthenticationFragment : UnchainedFragment() {
         const val LOGIN_TYPE_DIRECT = 0
         const val LOGIN_TYPE_INDIRECT = 1
 
-        // size of the login QR code shown on TV, must match the ImageView size in the layout
-        private const val QR_CODE_SIZE_DP = 200
-        private const val QR_QUIET_ZONE_MODULES = 2
+        // same minimum used for the manual private token input, mine is 52 characters
+        private const val MIN_TOKEN_LENGTH = 40
+        // the page where the private token can be copied from
+        private const val API_TOKEN_URL = "https://real-debrid.com/apitoken"
     }
 }

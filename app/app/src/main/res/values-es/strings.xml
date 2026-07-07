@@ -16,6 +16,10 @@
     <string name="token_web_received">Token recibido, continúa en tu TV</string>
     <string name="token_web_pin_label">PIN mostrado en la TV</string>
     <string name="token_web_get_token_link">Obtén aquí tu token privado</string>
+    <string name="send">Enviar</string>
+    <string name="send_link_from_phone_format">También puedes enviar el enlace o magnet desde tu teléfono abriendo %s</string>
+    <string name="link_web_received">Enlace recibido, continúa en tu TV</string>
+    <string name="link_qr_code_description">Escanea el código QR con tu teléfono para enviar un enlace</string>
     <string name="token_web_wrong_pin">PIN incorrecto, comprueba tu TV</string>
     <string name="obtained_token">Token obtenido</string>
     <string name="waiting_link">Cargando enlace de autorización</string>
