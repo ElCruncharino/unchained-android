@@ -304,6 +304,7 @@
     <string name="download_started">İndirme başladı, bildirim çubuğunu kontrol edin</string>
     <string name="download_not_started">İndirme başlatılırken hata oluştu</string>
     <string name="download_not_started_format">%s indirmesi başlatılırken hata oluştu</string>
+    <string name="download_failed_format">%s indirmesi başarısız oldu</string>
     <string name="multiple_downloads_enqueued_format">%2$d indirmeden %1$d tanesi doğru şekilde sıraya alındı</string>
     <string name="needs_download_permission">Unchained, dosyaları doğrudan indirmek için depolama izni gerektirir</string>
     <string name="test_connection">Bağlantıyı test et</string>
