@@ -57,10 +57,22 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="@string/torrent_details"
-            android:nextFocusRight="@id/rvTorrentList"
+            android:nextFocusRight="@id/bRefresh"
             android:nextFocusDown="@id/rvTorrentList"
             android:tooltipText="@string/torrent_details"
             app:icon="@drawable/icon_info"
+            app:iconSize="25dp" />
+
+        <Button
+            android:id="@+id/bRefresh"
+            style="?attr/materialIconButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/refresh"
+            android:nextFocusRight="@id/rvTorrentList"
+            android:nextFocusDown="@id/rvTorrentList"
+            android:tooltipText="@string/refresh"
+            app:icon="@drawable/icon_reload"
             app:iconSize="25dp" />
 
     </LinearLayout>
