@@ -519,6 +519,7 @@
     <string name="download_started">Download started, check the notification bar</string>
     <string name="download_not_started">Error during download initialization</string>
     <string name="download_not_started_format">Error initializing download of %s</string>
+    <string name="download_failed_format">Download of %s failed</string>
     <string name="multiple_downloads_enqueued_format">%1$d out of %2$d downloads enqueued correctly</string>
     <string name="needs_download_permission">Unchained needs the storage permission to download files directly</string>
     <string name="kodi" translatable="false">Kodi</string>

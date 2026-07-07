@@ -301,6 +301,7 @@
     <string name="download_started">Le téléchargement a commencé, vérifiez la barre de notification</string>
     <string name="download_not_started">Erreur lors de l\'initialisation du téléchargement</string>
     <string name="download_not_started_format">Erreur d\'initialisation du téléchargement de %s</string>
+    <string name="download_failed_format">Le téléchargement de %s a échoué</string>
     <string name="multiple_downloads_enqueued_format">%1$d téléchargements sur %2$d mis en file d\'attente correctement</string>
     <string name="needs_download_permission">Unchained a besoin de l\'autorisation de stockage pour télécharger directement des fichiers</string>
     <string name="test_connection">Testez la connexion</string>

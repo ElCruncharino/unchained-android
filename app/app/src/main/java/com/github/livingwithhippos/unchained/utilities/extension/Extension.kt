@@ -10,6 +10,7 @@ import android.content.ClipboardManager
 import android.content.ContentResolver.SCHEME_CONTENT
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.AssetManager
 import android.content.res.Configuration
 import android.content.res.Resources
@@ -329,6 +330,14 @@ fun DownloadManager.downloadFileInStandardFolder(
         EitherResult.Failure(e)
     }
 }
+
+/**
+ * Check if this device is an Android TV or another leanback-only device. These devices do not show
+ * the standard notification area
+ *
+ * @return true on leanback devices, false otherwise
+ */
+fun Context.isTv(): Boolean = packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
 
 /**
  * Return the Uri from a downloaded file id returned by the download manager
