@@ -12,6 +12,8 @@
     <string name="waiting_secret">En attente du code secret</string>
     <string name="waiting_token">En attente du jeton de confirmation</string>
     <string name="login_qr_code_description">Scannez le code QR avec votre téléphone pour vous connecter</string>
+    <string name="send_token_from_phone_format">Vous pouvez également envoyer le jeton depuis votre téléphone en ouvrant %s</string>
+    <string name="token_web_received">Jeton reçu, continuez sur votre TV</string>
     <string name="obtained_token">Jeton obtenu</string>
     <string name="waiting_link">Chargement du lien d’autorisation</string>
     <string name="link_loaded">Lien d’autorisation chargé</string>

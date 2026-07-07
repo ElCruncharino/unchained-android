@@ -12,6 +12,8 @@
     <string name="waiting_secret">Esperando clave secreta</string>
     <string name="waiting_token">Esperando confirmación del TOKEN</string>
     <string name="login_qr_code_description">Escanea el código QR con tu teléfono para iniciar sesión</string>
+    <string name="send_token_from_phone_format">También puedes enviar el token desde tu teléfono abriendo %s</string>
+    <string name="token_web_received">Token recibido, continúa en tu TV</string>
     <string name="obtained_token">Token obtenido</string>
     <string name="waiting_link">Cargando enlace de autorización</string>
     <string name="link_loaded">Enlace de autorización cargado</string>
