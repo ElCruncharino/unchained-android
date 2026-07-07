@@ -302,6 +302,7 @@ class AuthenticationFragment : UnchainedFragment() {
                 LocalTokenServer.Pages(
                     title = getString(R.string.app_name),
                     tokenLabel = getString(R.string.private_token),
+                    tokenLinkLabel = getString(R.string.token_web_get_token_link),
                     pinLabel = getString(R.string.token_web_pin_label),
                     submitLabel = getString(R.string.save),
                     successMessage = getString(R.string.token_web_received),

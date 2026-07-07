@@ -14,6 +14,7 @@
     <string name="send_token_from_phone_format">Jetonu telefonunuzdan %s adresini açarak da gönderebilirsiniz</string>
     <string name="token_web_received">Jeton alındı, TV\'nizden devam edin</string>
     <string name="token_web_pin_label">TV\'de gösterilen PIN</string>
+    <string name="token_web_get_token_link">Özel jetonunuzu buradan alın</string>
     <string name="token_web_wrong_pin">PIN yanlış, TV\'nizi kontrol edin</string>
     <string name="obtained_token">Jeton alındı</string>
     <string name="waiting_link">Yetkilendirme bağlantısı yükleniyor</string>

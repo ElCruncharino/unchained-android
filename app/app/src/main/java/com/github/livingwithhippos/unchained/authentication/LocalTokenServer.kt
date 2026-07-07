@@ -48,6 +48,7 @@ class LocalTokenServer(
     data class Pages(
         val title: String,
         val tokenLabel: String,
+        val tokenLinkLabel: String,
         val pinLabel: String,
         val submitLabel: String,
         val successMessage: String,
@@ -268,6 +269,7 @@ class LocalTokenServer(
         <title>${pages.title.escapeHtml()}</title>
         <style>$PAGE_STYLE</style></head>
         <body><h2>${pages.title.escapeHtml()}</h2>
+        <p><a href="$TOKEN_URL" target="_blank" rel="noopener">${pages.tokenLinkLabel.escapeHtml()}</a></p>
         <form method="post" action="/">
         <label for="token">${pages.tokenLabel.escapeHtml()}</label>
         <input type="text" id="token" name="token" autocomplete="off" autofocus>
@@ -305,12 +307,17 @@ class LocalTokenServer(
         private const val MAX_BODY_LENGTH = 10_000
         // same minimum used by AuthenticationFragment for the manual input
         private const val MIN_TOKEN_LENGTH = 40
+        // the same page the app links from "get your private token": opening it on the phone
+        // lets the user log in, copy the token and paste it in the form below. CSP only
+        // restricts what the page itself loads or submits, not plain link navigation.
+        private const val TOKEN_URL = "https://real-debrid.com/apitoken"
         private const val PAGE_STYLE =
             "body{font-family:sans-serif;margin:8vh auto;max-width:26em;padding:0 1em;" +
                 "background:#121212;color:#eee}" +
                 "input,button{font-size:1.1em;width:100%;box-sizing:border-box;margin-top:1em;" +
                 "padding:0.6em;border-radius:8px;border:1px solid #666;background:#1e1e1e;color:#eee}" +
                 "button{background:#7b5cd6;color:#fff;border:none}" +
-                "label{display:block;margin-top:1em}"
+                "label{display:block;margin-top:1em}" +
+                "a{color:#a58cf0}"
     }
 }
