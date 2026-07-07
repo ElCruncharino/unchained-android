@@ -18,6 +18,8 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.View
+import android.view.ViewParent
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,6 +38,8 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import com.github.livingwithhippos.unchained.BuildConfig
 import com.github.livingwithhippos.unchained.R
 import com.github.livingwithhippos.unchained.data.model.UserAction
@@ -220,6 +224,8 @@ class MainActivity : AppCompatActivity() {
         setupBottomNavigationBar(binding)
 
         setupBackPressedHandling()
+
+        setupTvBackFocusHandling()
 
         addMenuProvider(
             object : MenuProvider {
@@ -936,6 +942,42 @@ class MainActivity : AppCompatActivity() {
 
             exitCallback.isEnabled = onExitingFragment && backWouldExit
         }
+    }
+
+    /**
+     * On Android TV the lists (downloads, torrents, search results...) can be very long or even
+     * endless, so once the d-pad focus enters one there is no reasonable way to reach the
+     * navigation bar again (see issue #376). On TV devices, pressing back while the focus is
+     * inside a list moves the focus back to the bottom navigation bar instead of navigating. Any
+     * other back press is forwarded to the default handling.
+     */
+    private fun setupTvBackFocusHandling() {
+        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) return
+
+        onBackPressedDispatcher.addCallback(this) {
+            val focusRescued =
+                currentFocus?.isInsideScrollableList() == true &&
+                    binding.bottomNavView.requestFocus()
+            if (!focusRescued) {
+                // let the other callbacks or the default handling manage this back press
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+                isEnabled = true
+            }
+        }
+    }
+
+    /**
+     * Check if this view is inside a scrollable list. The [RecyclerView] used internally by
+     * [ViewPager2] to swipe between pages is skipped, only "real" lists are considered.
+     */
+    private fun View.isInsideScrollableList(): Boolean {
+        var current: ViewParent? = parent
+        while (current != null) {
+            if (current is RecyclerView && current.parent !is ViewPager2) return true
+            current = current.parent
+        }
+        return false
     }
 
     private fun showUpdateDialog(description: String, link: String) {
