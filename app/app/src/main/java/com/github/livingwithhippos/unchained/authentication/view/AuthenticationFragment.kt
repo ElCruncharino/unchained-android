@@ -1,5 +1,7 @@
 package com.github.livingwithhippos.unchained.authentication.view
 
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.os.Bundle
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
@@ -26,10 +28,17 @@ import com.github.livingwithhippos.unchained.utilities.extension.copyToClipboard
 import com.github.livingwithhippos.unchained.utilities.extension.getClipboardText
 import com.github.livingwithhippos.unchained.utilities.extension.getThemeColor
 import com.github.livingwithhippos.unchained.utilities.extension.hideKeyboard
+import com.github.livingwithhippos.unchained.utilities.extension.isTv
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
 import com.google.android.material.textfield.TextInputEditText
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 /**
  * A simple [UnchainedFragment] subclass. It is capable of authenticating a user via either the
@@ -123,6 +132,7 @@ class AuthenticationFragment : UnchainedFragment() {
                         binding.cbSecret.text = getString(R.string.waiting_user_auth)
                         binding.tvUserCodeValue.text = getString(R.string.copy_code)
                         binding.bCopyLink.isEnabled = false
+                        binding.ivLoginQrCode.visibility = View.GONE
 
                         // get the authentication link to start the process
                         viewModel.fetchAuthenticationInfo()
@@ -164,6 +174,11 @@ class AuthenticationFragment : UnchainedFragment() {
                 // let the user copy the user code to enter in the website
                 binding.tvUserCodeValue.text = auth.userCode
                 binding.bCopyLink.isEnabled = true
+                // TVs have no browser and typing the link with a remote is painful: show a QR
+                // code that can be scanned with a phone to authorize the app from there
+                if (requireContext().isTv()) {
+                    showLoginQrCode(auth.directVerificationUrl.ifBlank { auth.verificationUrl })
+                }
                 // update the currently saved credentials
                 activityViewModel.updateCredentialsDeviceCode(auth.deviceCode)
                 // transition state machine
@@ -278,6 +293,46 @@ class AuthenticationFragment : UnchainedFragment() {
         return sb
     }
 
+    /** Render [url] as a QR code and display it in the login QR ImageView. */
+    private fun showLoginQrCode(url: String) {
+        val sizePx = (QR_CODE_SIZE_DP * resources.displayMetrics.density).toInt()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val qrCode = withContext(Dispatchers.Default) { generateQrCode(url, sizePx) }
+            if (qrCode != null && _binding != null) {
+                binding.ivLoginQrCode.setImageBitmap(qrCode)
+                binding.ivLoginQrCode.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    /**
+     * Generate a QR code [Bitmap] encoding [content], around [sizePx] pixels wide, with a quiet
+     * zone around it. Returns null if the code could not be generated.
+     */
+    private fun generateQrCode(content: String, sizePx: Int): Bitmap? =
+        try {
+            val matrix =
+                QRCodeWriter()
+                    .encode(
+                        content,
+                        BarcodeFormat.QR_CODE,
+                        sizePx,
+                        sizePx,
+                        mapOf(EncodeHintType.MARGIN to QR_QUIET_ZONE_MODULES),
+                    )
+            val pixels = IntArray(matrix.width * matrix.height)
+            for (y in 0 until matrix.height) {
+                for (x in 0 until matrix.width) {
+                    pixels[y * matrix.width + x] =
+                        if (matrix.get(x, y)) Color.BLACK else Color.WHITE
+                }
+            }
+            Bitmap.createBitmap(pixels, matrix.width, matrix.height, Bitmap.Config.RGB_565)
+        } catch (e: Exception) {
+            Timber.e(e, "Error generating the login QR code")
+            null
+        }
+
     fun onSaveCodeClick(codeInputField: TextInputEditText) {
         val token: String = codeInputField.text.toString().trim()
         // mine is 52 characters
@@ -298,5 +353,9 @@ class AuthenticationFragment : UnchainedFragment() {
     companion object {
         const val LOGIN_TYPE_DIRECT = 0
         const val LOGIN_TYPE_INDIRECT = 1
+
+        // size of the login QR code shown on TV, must match the ImageView size in the layout
+        private const val QR_CODE_SIZE_DP = 200
+        private const val QR_QUIET_ZONE_MODULES = 2
     }
 }

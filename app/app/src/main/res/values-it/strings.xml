@@ -11,6 +11,7 @@
     <string name="obtained_user_auth">Ottenuta autorizzazione utente</string>
     <string name="waiting_secret">In attesa del segreto</string>
     <string name="waiting_token">In attesa del codice di conferma</string>
+    <string name="login_qr_code_description">Scansiona il codice QR con il tuo telefono per accedere</string>
     <string name="obtained_token">Codice confermato</string>
     <string name="waiting_link">Caricamento link di autorizzazione</string>
     <string name="link_loaded">Link di autorizzazione caricato</string>

@@ -87,7 +87,7 @@
             app:layout_constraintTop_toBottomOf="@+id/cbSecret"
             app:layout_constraintStart_toStartOf="@+id/cbLink"
             app:layout_constraintEnd_toEndOf="@+id/cbLink"
-            app:layout_constraintBottom_toTopOf="@+id/cbToken"
+            app:layout_constraintBottom_toTopOf="@+id/ivLoginQrCode"
             >
             <TextView
                 android:id="@+id/tvUserCodeValue"
@@ -113,6 +113,19 @@
 
         </LinearLayout>
 
+        <!-- only shown on Android TV, where the authentication link cannot be opened -->
+        <ImageView
+            android:id="@+id/ivLoginQrCode"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            android:contentDescription="@string/login_qr_code_description"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@+id/llUserCode"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/cbToken" />
 
         <CheckBox
             android:id="@+id/cbToken"
@@ -122,7 +135,7 @@
             android:clickable="false"
             android:focusable="false"
             android:text="@string/waiting_token"
-            app:layout_constraintTop_toBottomOf="@+id/llUserCode"
+            app:layout_constraintTop_toBottomOf="@+id/ivLoginQrCode"
             app:layout_constraintStart_toStartOf="@+id/cbSecret"
             app:layout_constraintBottom_toTopOf="@+id/tvUsePrivateToken"
             />
