@@ -15,6 +15,7 @@
     <string name="send_token_from_phone_format">Puoi anche inviare il codice dal tuo telefono aprendo %s</string>
     <string name="token_web_received">Codice ricevuto, continua sulla TV</string>
     <string name="token_web_pin_label">PIN mostrato sulla TV</string>
+    <string name="token_web_get_token_link">Ottieni qui il tuo codice privato</string>
     <string name="token_web_wrong_pin">PIN errato, controlla la TV</string>
     <string name="obtained_token">Codice confermato</string>
     <string name="waiting_link">Caricamento link di autorizzazione</string>

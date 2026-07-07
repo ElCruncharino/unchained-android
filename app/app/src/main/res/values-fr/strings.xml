@@ -15,6 +15,7 @@
     <string name="send_token_from_phone_format">Vous pouvez également envoyer le jeton depuis votre téléphone en ouvrant %s</string>
     <string name="token_web_received">Jeton reçu, continuez sur votre TV</string>
     <string name="token_web_pin_label">Code PIN affiché sur la TV</string>
+    <string name="token_web_get_token_link">Obtenez votre jeton privé ici</string>
     <string name="token_web_wrong_pin">Code PIN incorrect, vérifiez votre TV</string>
     <string name="obtained_token">Jeton obtenu</string>
     <string name="waiting_link">Chargement du lien d’autorisation</string>
