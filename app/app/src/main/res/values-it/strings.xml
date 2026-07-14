@@ -401,6 +401,8 @@
     <string name="open_with">Apri con</string>
     <string name="local">Locale</string>
     <string name="missing_default_player">Imposta il lettore di default nell impostazioni</string>
+    <string name="default_player_not_installed">%1$s non è installato. Scegli un altro lettore multimediale nelle impostazioni.</string>
+    <string name="no_media_players_installed">Nessun lettore multimediale compatibile installato. Installane uno o imposta un pacchetto personalizzato qui sotto.</string>
     <string name="ui_settings_summary">Scegli se e come sono mostrate le cose</string>
     <string name="download_details_button_choice">Scegli quali bottoni mostrare nella schermata di dettagli download</string>
     <string name="external_apps">Applicazioni esterne</string>

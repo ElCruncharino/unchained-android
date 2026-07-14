@@ -110,6 +110,15 @@ constructor(
         return preferences.getString("custom_media_player", "") ?: ""
     }
 
+    /**
+     * Reset the stored default media player to an empty "not set" value. Used when the selected
+     * player turns out to be uninstalled, so the next send-to-player asks the user to pick a new
+     * one instead of failing on the missing app forever.
+     */
+    fun clearDefaultPlayer() {
+        preferences.edit { putString("default_media_player", "") }
+    }
+
     fun fetchServices(mediaPlayerOnly: Boolean = true) {
         // todo: replace other uses with [allServices]
         viewModelScope.launch {

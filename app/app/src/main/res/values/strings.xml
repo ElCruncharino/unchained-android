@@ -620,6 +620,8 @@
     <string name="open_with">Open with</string>
     <string name="local">Local</string>
     <string name="missing_default_player">Set the default media player in settings</string>
+    <string name="default_player_not_installed">%1$s is not installed. Pick another media player in settings.</string>
+    <string name="no_media_players_installed">No supported media player installed. Install one or set a custom player package below.</string>
     <string name="ui_settings_summary">Choose how and if things are shown</string>
     <string name="download_details_button_choice">Choose which buttons should be shown in the download details screen</string>
     <string name="external_apps">External applications</string>
