@@ -402,9 +402,6 @@
     <string name="send_to_player">Envoyer au lecteur</string>
     <string name="open_with">Ouvrir avec</string>
     <string name="local">Local</string>
-    <string name="missing_default_player">Définir le lecteur multimédia par défaut dans les paramètres</string>
-    <string name="default_player_not_installed">%1$s n\'est pas installé. Choisissez un autre lecteur multimédia dans les paramètres.</string>
-    <string name="no_media_players_installed">Aucun lecteur multimédia compatible installé. Installez-en un ou définissez un paquet personnalisé ci-dessous.</string>
     <string name="ui_settings_summary">Choisissez comment et si les choses sont montrées</string>
     <string name="download_details_button_choice">Choisissez les boutons à afficher dans l\'écran des détails du téléchargement.</string>
     <string name="external_apps">Applications externes</string>
@@ -417,9 +414,6 @@
     <string name="show_stream_browser_button">Afficher le bouton de flux dans le navigateur</string>
     <string name="install_plugins">Installer les plugins</string>
     <string name="install_plugins_summary">Utilisez le bouton de gestion du référentiel dans le menu de l\'écran de recherche pour installer les plugins</string>
-    <string name="custom_media_player">Lecteur multimédia personnalisé</string>
-    <string name="custom_media_player_summary">Utilisez un paquetage de lecteur multimédia personnalisé comme \"org.videolan.vlc\". Il peut prendre en charge le partage direct des fichiers multimédias. N\'oubliez pas de choisir \"Lecteur multimédia personnalisé\" comme préférence de lecteur multimédia par défaut.</string>
-    <string name="invalid_package">Paquet non valide</string>
     <string name="delete_all_downloads">Supprimer tous les téléchargements</string>
     <string name="delete_all_torrents">Supprimer tous les torrents</string>
     <string name="fdroid_update_description">Une nouvelle version de l\'application a été trouvée sur F-Droid</string>
