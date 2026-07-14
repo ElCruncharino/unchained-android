@@ -20,13 +20,13 @@ import androidx.preference.PreferenceFragmentCompat
 import com.github.livingwithhippos.unchained.R
 import com.github.livingwithhippos.unchained.settings.viewmodel.SettingEvent
 import com.github.livingwithhippos.unchained.settings.viewmodel.SettingsViewModel
-import com.github.livingwithhippos.unchained.utilities.CUSTOM_MEDIA_PLAYER_ID
 import com.github.livingwithhippos.unchained.utilities.FEEDBACK_URL
 import com.github.livingwithhippos.unchained.utilities.GPLV3_URL
-import com.github.livingwithhippos.unchained.utilities.knownMediaPlayers
+import com.github.livingwithhippos.unchained.utilities.extension.currentDefaultVideoPlayerLabel
 import com.github.livingwithhippos.unchained.utilities.extension.getThemeList
-import com.github.livingwithhippos.unchained.utilities.extension.installedPlayerPackage
 import com.github.livingwithhippos.unchained.utilities.extension.isTv
+import com.github.livingwithhippos.unchained.utilities.extension.launchDefaultVideoPlayerPicker
+import com.github.livingwithhippos.unchained.utilities.extension.playerSetupClipUri
 import com.github.livingwithhippos.unchained.utilities.extension.openExternalWebPage
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
 import dagger.hilt.android.AndroidEntryPoint
@@ -98,7 +98,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         setupVersion()
 
-        setupDefaultMediaPlayer()
+        setupDefaultMediaPlayerPicker()
 
         hideTvIrrelevantPreferences()
 
@@ -151,6 +151,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
 
         return super.onCreateView(inflater, container, savedInstanceState)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // there is no callback for "user picked a default player", so re-resolve it every time the
+        // settings screen comes back to the foreground to reflect a choice just made in the picker
+        updateDefaultMediaPlayerSummary()
     }
 
     private fun setupTheme() {
@@ -211,48 +218,32 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     /**
-     * Populate the default media player list with only the players actually installed on this
-     * device, plus the always available "custom player" option, instead of the static full list
-     * that offered players the user does not have. If the currently stored default refers to a
-     * player that is no longer installed, the selection is reset so the picker shows "not set"
-     * instead of a stale entry, and send-to-player falls back to asking for a new choice.
+     * Wire up the single "default media player" row. Instead of maintaining a list of known
+     * players, clicking the row hands a small bundled clip to Android's native "open with" flow so
+     * the user can pick any installed player and, via the "Always" button, set it as the system
+     * default. The row summary shows whichever player is currently the default (or a "not set"
+     * hint), refreshed in onResume since Android gives no callback when the user makes that choice.
      */
-    private fun setupDefaultMediaPlayer() {
-        val playerPreference =
-            findPreference<ListPreference>("default_media_player") ?: return
-        val context = requireContext()
-
-        val installedPlayers =
-            knownMediaPlayers.filter { context.installedPlayerPackage(it) != null }
-
-        val entries = mutableListOf<CharSequence>()
-        val values = mutableListOf<CharSequence>()
-        installedPlayers.forEach { player ->
-            entries.add(getString(player.labelRes))
-            values.add(player.id)
+    private fun setupDefaultMediaPlayerPicker() {
+        val playerPreference = findPreference<Preference>("default_media_player_picker") ?: return
+        updateDefaultMediaPlayerSummary()
+        playerPreference.setOnPreferenceClickListener {
+            val context = requireContext()
+            context.launchDefaultVideoPlayerPicker(context.playerSetupClipUri())
+            true
         }
-        // the custom player is a manually typed package name, so it is always offered
-        entries.add(getString(R.string.custom_media_player))
-        values.add(CUSTOM_MEDIA_PLAYER_ID)
+    }
 
-        playerPreference.entries = entries.toTypedArray()
-        playerPreference.entryValues = values.toTypedArray()
-
-        // self-heal: if the stored default points to a player that is not installed anymore, drop
-        // the selection so the user is nudged to pick a new one instead of silently keeping a
-        // broken default
-        val stored = playerPreference.value
-        if (!stored.isNullOrEmpty() && values.none { it == stored }) {
-            playerPreference.value = ""
-        }
-
-        if (installedPlayers.isEmpty()) {
-            playerPreference.summary = getString(R.string.no_media_players_installed)
-        } else {
-            // equivalent to app:useSimpleSummaryProvider="true", set here instead of in xml since
-            // it needs the entries/entryValues just assigned above to resolve the current value
-            playerPreference.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
-        }
+    /** Set the media player row summary to the current default player label, or a "not set" hint. */
+    private fun updateDefaultMediaPlayerSummary() {
+        val playerPreference = findPreference<Preference>("default_media_player_picker") ?: return
+        val currentPlayer = requireContext().currentDefaultVideoPlayerLabel()
+        playerPreference.summary =
+            if (currentPlayer.isNullOrBlank()) {
+                getString(R.string.default_media_player_not_set)
+            } else {
+                getString(R.string.default_media_player_current, currentPlayer)
+            }
     }
 
     /** Hide preferences that cannot work or make no sense on a leanback (Android TV) device. */

@@ -65,33 +65,14 @@
             app:summary="@string/enable_kodi_control"
             app:title="@string/kodi_remote_control" />
 
-        <PreferenceCategory
-            android:title="@string/default_media_player"
-            app:allowDividerAbove="false"
-            app:allowDividerBelow="false">
-            <!--
-                entries, entryValues and the summary provider are set at runtime in
-                SettingsFragment from the players actually installed on the device, see
-                knownMediaPlayers in Constants.kt. useSimpleSummaryProvider is deliberately not
-                set here: it resolves against entries/entryValues, which do not exist yet at
-                inflation time, and setting it again later once they do crashes with
-                "Preference already has a SummaryProvider set".
-            -->
-            <DropDownPreference
-                android:defaultValue="vlc"
-                android:key="default_media_player"
-                android:title="@string/default_media_player" />
-
-            <Preference android:summary="@string/custom_media_player_summary" />
-
-            <EditTextPreference
-                android:defaultValue=""
-                android:key="custom_media_player"
-                android:selectAllOnFocus="true"
-                android:singleLine="true"
-                android:title="@string/custom_media_player"
-                app:useSimpleSummaryProvider="true" />
-        </PreferenceCategory>
+        <!--
+            Clicking this hands a placeholder clip to Android's native "open with" flow so the user
+            can pick a video player and set it as default. The summary is filled in at runtime with
+            the currently resolved default, see setupDefaultMediaPlayerPicker in SettingsFragment.
+        -->
+        <Preference
+            app:key="default_media_player_picker"
+            app:title="@string/default_media_player" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/notifications">
