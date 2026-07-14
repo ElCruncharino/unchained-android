@@ -161,7 +161,8 @@ fun showPhoneInputDialog(
     onValueReceived: (String) -> Unit,
 ) {
     val view = LayoutInflater.from(context).inflate(R.layout.dialog_phone_input, null)
-    val messageView = view.findViewById<TextView>(R.id.tvPhoneInputMessage)
+    val addressView = view.findViewById<TextView>(R.id.tvPhoneInputAddress)
+    val pinView = view.findViewById<TextView>(R.id.tvPhoneInputPin)
     val qrView = view.findViewById<ImageView>(R.id.ivPhoneInputQrCode)
 
     var dialog: AlertDialog? = null
@@ -198,10 +199,8 @@ fun showPhoneInputDialog(
         return
     }
 
-    messageView.text =
-        context.getString(R.string.send_value_from_phone_format, address) +
-            "\n" +
-            context.getString(R.string.token_server_pin_format, controller.pin)
+    addressView.text = context.getString(R.string.send_value_from_phone_format, address)
+    pinView.text = context.getString(R.string.token_server_pin_format, controller.pin)
 
     dialog =
         MaterialAlertDialogBuilder(context)
