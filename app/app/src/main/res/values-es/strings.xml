@@ -21,6 +21,12 @@
     <string name="link_web_received">Enlace recibido, continúa en tu TV</string>
     <string name="link_qr_code_description">Escanea el código QR con tu teléfono para enviar un enlace</string>
     <string name="token_web_wrong_pin">PIN incorrecto, comprueba tu TV</string>
+    <string name="type_from_phone">Escribe desde tu teléfono</string>
+    <string name="send_value_from_phone_format">También puedes enviarlo desde tu teléfono abriendo %s</string>
+    <string name="value_web_received">Recibido, continúa en tu TV</string>
+    <string name="phone_input_qr_code_description">Escanea el código QR con tu teléfono para rellenar este campo</string>
+    <string name="phone_input_invalid">Valor no válido, comprueba tu TV</string>
+    <string name="phone_input_unavailable">No se pudo iniciar el servidor de entrada desde el teléfono</string>
     <string name="obtained_token">Token obtenido</string>
     <string name="waiting_link">Cargando enlace de autorización</string>
     <string name="link_loaded">Enlace de autorización cargado</string>

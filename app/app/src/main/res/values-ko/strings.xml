@@ -20,6 +20,12 @@
     <string name="link_web_received">링크를 받았습니다. TV에서 계속하세요</string>
     <string name="link_qr_code_description">휴대폰으로 QR 코드를 스캔하여 링크를 보내세요</string>
     <string name="token_web_wrong_pin">PIN이 올바르지 않습니다. TV를 확인하세요</string>
+    <string name="type_from_phone">휴대폰으로 입력</string>
+    <string name="send_value_from_phone_format">%s 주소를 열어 휴대폰에서 보낼 수도 있습니다</string>
+    <string name="value_web_received">수신됨, TV에서 계속하세요</string>
+    <string name="phone_input_qr_code_description">휴대폰으로 QR 코드를 스캔하여 이 항목을 채우세요</string>
+    <string name="phone_input_invalid">잘못된 값입니다. TV를 확인하세요</string>
+    <string name="phone_input_unavailable">휴대폰 입력 서버를 시작할 수 없습니다</string>
     <string name="obtained_token">토큰 획득</string>
     <string name="waiting_link">인증 링크 로딩 중</string>
     <string name="link_loaded">인증 링크 로드됨</string>

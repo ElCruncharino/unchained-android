@@ -45,6 +45,20 @@ class LocalTokenServer(
     private val isValueValid: (String) -> Boolean,
     private val onValueReceived: (String) -> Unit,
     private val onStopped: () -> Unit = {},
+    /** The PIN that must be typed in the served form, to be displayed on the TV */
+    val pin: String = generatePin(),
+    /**
+     * Returns true when the request already carries a trusted session cookie (see the phone input
+     * session), in which case the PIN is not required again. Defaults to never trusting, so a
+     * caller that does not opt in keeps the plain PIN only behaviour.
+     */
+    private val isTrusted: (String?) -> Boolean = { false },
+    /**
+     * Called after a first valid PIN submission to mint and remember a session token for the
+     * submitting phone; the returned token is set as a cookie so that phone is trusted next time.
+     * Returning null sets no cookie.
+     */
+    private val grantTrust: () -> String? = { null },
 ) {
 
     /**
@@ -62,9 +76,6 @@ class LocalTokenServer(
         val linkUrl: String? = null,
         val linkLabel: String? = null,
     )
-
-    /** The PIN that must be typed in the served form, to be displayed on the TV */
-    val pin: String = "%06d".format(SecureRandom().nextInt(1_000_000))
 
     private var serverSocket: ServerSocket? = null
 
@@ -138,27 +149,35 @@ class LocalTokenServer(
             val reader = client.getInputStream().bufferedReader()
             val requestLine = reader.readLine()?.take(MAX_REQUEST_LINE_LENGTH) ?: return RequestResult.NONE
             var contentLength = 0
+            var cookieToken: String? = null
             while (true) {
                 val line = reader.readLine() ?: return RequestResult.NONE
                 if (line.isBlank()) break
                 if (line.startsWith("content-length:", ignoreCase = true)) {
                     contentLength = line.substringAfter(':').trim().toIntOrNull() ?: 0
                 }
+                if (line.startsWith("cookie:", ignoreCase = true)) {
+                    cookieToken = sessionTokenFromCookies(line.substringAfter(':'))
+                }
             }
             val parts = requestLine.split(' ')
             val method = parts.getOrNull(0).orEmpty()
             val path = parts.getOrNull(1).orEmpty().substringBefore('?')
+            // a phone that already passed the PIN once this session is trusted through its cookie
+            // and is not asked for the PIN again
+            val trusted = isTrusted(cookieToken)
 
             var result = RequestResult.NONE
             val response: Response =
                 when {
                     path != "/" -> Response(404, messagePage(pages.errorMessage))
-                    method.equals("GET", ignoreCase = true) -> Response(200, formPage())
+                    method.equals("GET", ignoreCase = true) ->
+                        Response(200, formPage(includePin = !trusted))
                     method.equals("POST", ignoreCase = true) -> {
                         val fields = readForm(reader, contentLength)
                         val value = fields["value"]?.trim()
                         when {
-                            !isPinValid(fields["pin"]?.trim()) -> {
+                            !trusted && !isPinValid(fields["pin"]?.trim()) -> {
                                 result = RequestResult.WRONG_PIN
                                 Response(401, messagePage(pages.wrongPinMessage))
                             }
@@ -167,7 +186,13 @@ class LocalTokenServer(
                             else -> {
                                 result = RequestResult.VALUE_RECEIVED
                                 onValueReceived(value)
-                                Response(200, messagePage(pages.successMessage))
+                                // remember this phone so it can skip the PIN next time
+                                val newToken = if (trusted) null else grantTrust()
+                                Response(
+                                    200,
+                                    messagePage(pages.successMessage),
+                                    setCookie = newToken?.let(::sessionCookie),
+                                )
                             }
                         }
                     }
@@ -175,6 +200,7 @@ class LocalTokenServer(
                 }
 
             val body = response.page.toByteArray(Charsets.UTF_8)
+            val setCookieHeader = response.setCookie?.let { "Set-Cookie: $it\r\n" } ?: ""
             val headers =
                 "HTTP/1.1 ${response.status} ${statusName(response.status)}\r\n" +
                     "Content-Type: text/html; charset=utf-8\r\n" +
@@ -185,6 +211,7 @@ class LocalTokenServer(
                     "Referrer-Policy: no-referrer\r\n" +
                     "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; " +
                     "form-action 'self'\r\n" +
+                    setCookieHeader +
                     "Connection: close\r\n\r\n"
             client.getOutputStream().apply {
                 write(headers.toByteArray(Charsets.UTF_8))
@@ -198,7 +225,21 @@ class LocalTokenServer(
         }
     }
 
-    private data class Response(val status: Int, val page: String)
+    private data class Response(val status: Int, val page: String, val setCookie: String? = null)
+
+    /** Build the Set-Cookie value for a freshly granted session [token] */
+    private fun sessionCookie(token: String): String =
+        "$SESSION_COOKIE_NAME=$token; Path=/; Max-Age=$SESSION_COOKIE_MAX_AGE_S; HttpOnly; " +
+            "SameSite=Strict"
+
+    /** Extract our session token from a raw Cookie header value, if present */
+    private fun sessionTokenFromCookies(header: String): String? =
+        header
+            .split(';')
+            .map { it.trim() }
+            .firstOrNull { it.startsWith("$SESSION_COOKIE_NAME=") }
+            ?.substringAfter('=')
+            ?.takeIf { it.isNotBlank() }
 
     private fun statusName(status: Int): String =
         when (status) {
@@ -267,12 +308,18 @@ class LocalTokenServer(
         return null
     }
 
-    private fun formPage(): String {
+    private fun formPage(includePin: Boolean): String {
         val link =
             if (pages.linkUrl != null && pages.linkLabel != null)
                 // CSP only restricts what the page loads or submits, not plain link navigation
                 """<p><a href="${pages.linkUrl.escapeHtml()}" target="_blank" rel="noopener">""" +
                     """${pages.linkLabel.escapeHtml()}</a></p>"""
+            else ""
+        // a trusted phone (already passed the PIN this session) is not asked for it again
+        val pinField =
+            if (includePin)
+                """<label for="pin">${pages.pinLabel.escapeHtml()}</label>""" +
+                    """<input type="text" id="pin" name="pin" inputmode="numeric" autocomplete="off">"""
             else ""
         return """
         <!DOCTYPE html>
@@ -285,8 +332,7 @@ class LocalTokenServer(
         <form method="post" action="/">
         <label for="value">${pages.fieldLabel.escapeHtml()}</label>
         <input type="text" id="value" name="value" autocomplete="off" autofocus>
-        <label for="pin">${pages.pinLabel.escapeHtml()}</label>
-        <input type="text" id="pin" name="pin" inputmode="numeric" autocomplete="off">
+        $pinField
         <button type="submit">${pages.submitLabel.escapeHtml()}</button>
         </form></body></html>
         """
@@ -309,6 +355,9 @@ class LocalTokenServer(
         replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
 
     companion object {
+        /** A fresh random 6 digit PIN, generated with a cryptographically strong source */
+        fun generatePin(): String = "%06d".format(SecureRandom().nextInt(1_000_000))
+
         // predictable ports, easy to type manually if the qr code cannot be scanned
         private val PORT_RANGE = 8080..8100
         private const val BACKLOG = 4
@@ -318,6 +367,9 @@ class LocalTokenServer(
         private const val MAX_PIN_FAILURES = 5
         private const val MAX_REQUEST_LINE_LENGTH = 2000
         private const val MAX_BODY_LENGTH = 10_000
+        // name of the cookie carrying the per session trust token, and how long it lasts
+        private const val SESSION_COOKIE_NAME = "ucin_session"
+        private const val SESSION_COOKIE_MAX_AGE_S = 30 * 60
         private const val PAGE_STYLE =
             "body{font-family:sans-serif;margin:8vh auto;max-width:26em;padding:0 1em;" +
                 "background:#121212;color:#eee}" +

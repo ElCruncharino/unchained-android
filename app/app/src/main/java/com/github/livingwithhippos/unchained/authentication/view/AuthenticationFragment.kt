@@ -14,7 +14,6 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.github.livingwithhippos.unchained.R
-import com.github.livingwithhippos.unchained.authentication.LocalTokenServer
 import com.github.livingwithhippos.unchained.authentication.viewmodel.AuthenticationViewModel
 import com.github.livingwithhippos.unchained.authentication.viewmodel.SecretResult
 import com.github.livingwithhippos.unchained.base.UnchainedFragment
@@ -30,10 +29,10 @@ import com.github.livingwithhippos.unchained.utilities.extension.hideKeyboard
 import com.github.livingwithhippos.unchained.utilities.extension.isTv
 import com.github.livingwithhippos.unchained.utilities.extension.loadQrCode
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
+import com.github.livingwithhippos.unchained.utilities.tv.enablePhoneInput
 import com.google.android.material.textfield.TextInputEditText
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 /**
  * A simple [UnchainedFragment] subclass. It is capable of authenticating a user via either the
@@ -46,9 +45,6 @@ class AuthenticationFragment : UnchainedFragment() {
     private var _binding: FragmentAuthenticationBinding? = null
     private val binding
         get() = _binding!!
-
-    // temporary server used on TV to receive the private token from another device
-    private var tokenServer: LocalTokenServer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -100,6 +96,24 @@ class AuthenticationFragment : UnchainedFragment() {
         }
 
         binding.bInsertPrivate.setOnClickListener { onSaveCodeClick(binding.tiPrivateCode) }
+
+        // typing a long token with a remote is painful: on TV the field offers a QR code icon
+        // that starts a temporary local server so the token can be sent from another device
+        binding.tfPrivateCode.enablePhoneInput(
+            scope = viewLifecycleOwner.lifecycleScope,
+            fieldLabel = getString(R.string.private_token),
+            linkUrl = API_TOKEN_URL,
+            linkLabel = getString(R.string.token_web_get_token_link),
+            errorMessage = getString(R.string.invalid_token),
+            // same minimum length checked by the manual token field
+            isValueValid = { it.length >= MIN_TOKEN_LENGTH },
+            onValueReceived = { token ->
+                _binding?.let {
+                    it.tiPrivateCode.setText(token, TextView.BufferType.EDITABLE)
+                    onSaveCodeClick(it.tiPrivateCode)
+                }
+            },
+        )
 
         activityViewModel.fsmAuthenticationState.observe(viewLifecycleOwner) {
             if (it != null) {
@@ -265,76 +279,9 @@ class AuthenticationFragment : UnchainedFragment() {
         return binding.root
     }
 
-    override fun onStart() {
-        super.onStart()
-        // typing a long token with a remote is painful: on TV run a temporary server on the
-        // local network so the token can be sent from another device, e.g. the user's phone
-        if (requireContext().isTv()) startTokenServer()
-    }
-
-    override fun onStop() {
-        tokenServer?.stop()
-        tokenServer = null
-        super.onStop()
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    /**
-     * Start a temporary http server receiving the private token from the local network and show
-     * its address and PIN on screen, plus a QR code for the address. The server accepts a single
-     * token, protected by the displayed PIN, and is stopped when this screen is left, see
-     * [onStop].
-     */
-    private fun startTokenServer() {
-        val server =
-            LocalTokenServer(
-                LocalTokenServer.Pages(
-                    title = getString(R.string.app_name),
-                    fieldLabel = getString(R.string.private_token),
-                    pinLabel = getString(R.string.token_web_pin_label),
-                    submitLabel = getString(R.string.save),
-                    successMessage = getString(R.string.token_web_received),
-                    errorMessage = getString(R.string.invalid_token),
-                    wrongPinMessage = getString(R.string.token_web_wrong_pin),
-                    linkUrl = API_TOKEN_URL,
-                    linkLabel = getString(R.string.token_web_get_token_link),
-                ),
-                // same minimum length checked by the manual token field
-                isValueValid = { it.length >= MIN_TOKEN_LENGTH },
-                onValueReceived = { token ->
-                    // the server delivers the token on a background thread
-                    _binding?.root?.post {
-                        if (_binding == null) return@post
-                        binding.tiPrivateCode.setText(token, TextView.BufferType.EDITABLE)
-                        onSaveCodeClick(binding.tiPrivateCode)
-                    }
-                },
-                onStopped = {
-                    // the server stopped itself (timeout, too many wrong PINs or token
-                    // received): remove the stale address from the screen
-                    _binding?.root?.post {
-                        if (_binding == null) return@post
-                        binding.tvTokenServerMessage.visibility = View.GONE
-                        binding.ivTokenServerQrCode.visibility = View.GONE
-                    }
-                },
-            )
-        val address = server.start()
-        if (address != null) {
-            tokenServer = server
-            binding.tvTokenServerMessage.text =
-                getString(R.string.send_token_from_phone_format, address) +
-                    "\n" +
-                    getString(R.string.token_server_pin_format, server.pin)
-            binding.tvTokenServerMessage.visibility = View.VISIBLE
-            binding.ivTokenServerQrCode.loadQrCode(address, viewLifecycleOwner.lifecycleScope)
-        } else {
-            Timber.w("The local token server could not be started")
-        }
     }
 
     private fun getLoginMessage(type: Int): SpannableStringBuilder {
