@@ -403,6 +403,8 @@
     <string name="open_with">Birlikte aç</string>
     <string name="local">Yerel</string>
     <string name="missing_default_player">Ayarlarda varsayılan medya oynatıcısını ayarlayın</string>
+    <string name="default_player_not_installed">%1$s yüklü değil. Ayarlardan başka bir medya oynatıcı seçin.</string>
+    <string name="no_media_players_installed">Yüklü desteklenen bir medya oynatıcı yok. Bir tane yükleyin veya aşağıdan özel bir oynatıcı paketi ayarlayın.</string>
     <string name="ui_settings_summary">Nasıl ve neyin gösterileceğini seçin</string>
     <string name="download_details_button_choice">İndirme ayrıntıları ekranında hangi düğmelerin gösterileceğini seçin</string>
     <string name="external_apps">Harici uygulamalar</string>

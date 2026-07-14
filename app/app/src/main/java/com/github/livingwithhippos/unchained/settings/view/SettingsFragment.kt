@@ -20,9 +20,13 @@ import androidx.preference.PreferenceFragmentCompat
 import com.github.livingwithhippos.unchained.R
 import com.github.livingwithhippos.unchained.settings.viewmodel.SettingEvent
 import com.github.livingwithhippos.unchained.settings.viewmodel.SettingsViewModel
+import com.github.livingwithhippos.unchained.utilities.CUSTOM_MEDIA_PLAYER_ID
 import com.github.livingwithhippos.unchained.utilities.FEEDBACK_URL
 import com.github.livingwithhippos.unchained.utilities.GPLV3_URL
+import com.github.livingwithhippos.unchained.utilities.knownMediaPlayers
 import com.github.livingwithhippos.unchained.utilities.extension.getThemeList
+import com.github.livingwithhippos.unchained.utilities.extension.installedPlayerPackage
+import com.github.livingwithhippos.unchained.utilities.extension.isTv
 import com.github.livingwithhippos.unchained.utilities.extension.openExternalWebPage
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
 import dagger.hilt.android.AndroidEntryPoint
@@ -93,6 +97,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setupKodi()
 
         setupVersion()
+
+        setupDefaultMediaPlayer()
+
+        hideTvIrrelevantPreferences()
 
         findPreference<Preference>("download_folder_key")?.setOnPreferenceClickListener {
             pickDirectoryLauncher.launch(null)
@@ -200,6 +208,55 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val version = pi?.versionName
         val versionPreference = findPreference<Preference>("app_version")
         versionPreference?.summary = version
+    }
+
+    /**
+     * Populate the default media player list with only the players actually installed on this
+     * device, plus the always available "custom player" option, instead of the static full list
+     * that offered players the user does not have. If the currently stored default refers to a
+     * player that is no longer installed, the selection is reset so the picker shows "not set"
+     * instead of a stale entry, and send-to-player falls back to asking for a new choice.
+     */
+    private fun setupDefaultMediaPlayer() {
+        val playerPreference =
+            findPreference<ListPreference>("default_media_player") ?: return
+        val context = requireContext()
+
+        val installedPlayers =
+            knownMediaPlayers.filter { context.installedPlayerPackage(it) != null }
+
+        val entries = mutableListOf<CharSequence>()
+        val values = mutableListOf<CharSequence>()
+        installedPlayers.forEach { player ->
+            entries.add(getString(player.labelRes))
+            values.add(player.id)
+        }
+        // the custom player is a manually typed package name, so it is always offered
+        entries.add(getString(R.string.custom_media_player))
+        values.add(CUSTOM_MEDIA_PLAYER_ID)
+
+        playerPreference.entries = entries.toTypedArray()
+        playerPreference.entryValues = values.toTypedArray()
+
+        // self-heal: if the stored default points to a player that is not installed anymore, drop
+        // the selection so the user is nudged to pick a new one instead of silently keeping a
+        // broken default
+        val stored = playerPreference.value
+        if (!stored.isNullOrEmpty() && values.none { it == stored }) {
+            playerPreference.value = ""
+        }
+
+        if (installedPlayers.isEmpty()) {
+            playerPreference.summary = getString(R.string.no_media_players_installed)
+        }
+    }
+
+    /** Hide preferences that cannot work or make no sense on a leanback (Android TV) device. */
+    private fun hideTvIrrelevantPreferences() {
+        if (!requireContext().isTv()) return
+        // virtually no TV hardware has a vibration motor, so a "vibrate on download" toggle is a
+        // dead control there
+        findPreference<Preference>("vibrate_on_download")?.isVisible = false
     }
 
     override fun onPreferenceTreeClick(preference: Preference): Boolean {

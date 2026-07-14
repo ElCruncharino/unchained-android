@@ -49,11 +49,14 @@ import com.github.livingwithhippos.unchained.downloaddetails.viewmodel.DownloadD
 import com.github.livingwithhippos.unchained.downloaddetails.viewmodel.DownloadDetailsViewModel
 import com.github.livingwithhippos.unchained.downloaddetails.viewmodel.DownloadEvent
 import com.github.livingwithhippos.unchained.lists.view.ListState
+import com.github.livingwithhippos.unchained.utilities.CUSTOM_MEDIA_PLAYER_ID
 import com.github.livingwithhippos.unchained.utilities.EventObserver
 import com.github.livingwithhippos.unchained.utilities.RD_STREAMING_URL
+import com.github.livingwithhippos.unchained.utilities.knownMediaPlayers
 import com.github.livingwithhippos.unchained.utilities.extension.copyToClipboard
 import com.github.livingwithhippos.unchained.utilities.extension.getAvailableSpace
 import com.github.livingwithhippos.unchained.utilities.extension.getFileSizeString
+import com.github.livingwithhippos.unchained.utilities.extension.installedPlayerPackage
 import com.github.livingwithhippos.unchained.utilities.extension.isTv
 import com.github.livingwithhippos.unchained.utilities.extension.openExternalWebPage
 import com.github.livingwithhippos.unchained.utilities.extension.openMediaWithChooser
@@ -672,57 +675,45 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
     }
 
     override fun onSendToPlayer(url: String) {
-        when (viewModel.getDefaultPlayer()) {
-            "vlc" -> {
-                val vlcIntent = createMediaIntent("org.videolan.vlc", url)
-                tryStartExternalApp(vlcIntent)
-            }
+        val context = context ?: return
+        val playerId = viewModel.getDefaultPlayer()
 
-            "mpv" -> {
-                val mpvIntent = createMediaIntent("is.xyz.mpv", url)
-                tryStartExternalApp(mpvIntent)
-            }
-
-            "mx_player" -> {
-                val mxIntent = createMediaIntent("com.mxtech.videoplayer.pro", url)
-
-                try {
-                    startActivity(mxIntent)
-                } catch (e: ActivityNotFoundException) {
-                    mxIntent.setPackage("com.mxtech.videoplayer.ad")
-                    tryStartExternalApp(mxIntent)
-                }
-            }
-
-            "web_video_cast" -> {
-                val wvcIntent = createMediaIntent("com.instantbits.cast.webvideo", url)
-                tryStartExternalApp(wvcIntent)
-            }
-
-            "play_it" -> {
-                val wvcIntent = createMediaIntent("com.playit.videoplayer", url)
-                tryStartExternalApp(wvcIntent)
-            }
-
-            "player_just_video" -> {
-                val wvcIntent = createMediaIntent("com.brouken.player", url)
-                tryStartExternalApp(wvcIntent)
-            }
-
-            "custom_player" -> {
-                val customPlayerPackage = viewModel.getCustomPlayerPreference()
-                if (customPlayerPackage.isBlank()) {
-                    context?.showToast(R.string.invalid_package)
-                } else {
-                    val customIntent = createMediaIntent(customPlayerPackage, url)
-                    tryStartExternalApp(customIntent)
-                }
-            }
-
-            else -> {
-                context?.showToast(R.string.missing_default_player)
-            }
+        if (playerId.isNullOrBlank()) {
+            context.showToast(R.string.missing_default_player)
+            return
         }
+
+        if (playerId == CUSTOM_MEDIA_PLAYER_ID) {
+            val customPlayerPackage = viewModel.getCustomPlayerPreference()
+            if (customPlayerPackage.isBlank()) {
+                context.showToast(R.string.invalid_package)
+            } else {
+                tryStartExternalApp(createMediaIntent(customPlayerPackage, url))
+            }
+            return
+        }
+
+        val player = knownMediaPlayers.firstOrNull { it.id == playerId }
+        if (player == null) {
+            // stored value is not a known player (e.g. left over from an older version), treat it
+            // like a missing default
+            context.showToast(R.string.missing_default_player)
+            return
+        }
+
+        val installedPackage = context.installedPlayerPackage(player)
+        if (installedPackage == null) {
+            // the chosen default player was never installed or has been uninstalled since. Reset
+            // the stale preference and tell the user which player is gone, instead of showing the
+            // same generic "app not installed" toast on every press forever.
+            viewModel.clearDefaultPlayer()
+            context.showToast(
+                getString(R.string.default_player_not_installed, getString(player.labelRes))
+            )
+            return
+        }
+
+        tryStartExternalApp(createMediaIntent(installedPackage, url))
     }
 
     companion object {
