@@ -400,6 +400,8 @@
     <string name="show_media_player_button_summary">설치된 플레이어로 미디어를 보내는 버튼 표시</string>
     <string name="show_media_player_button">미디어 버튼 표시</string>
     <string name="default_media_player">기본 미디어 플레이어</string>
+    <string name="default_media_player_not_set">설정되지 않음. 동영상을 처음 열 때 사용할 앱을 묻습니다.</string>
+    <string name="default_media_player_current">%1$s. 변경하려면 다음에 \"한 번만\"을 선택하거나 Android 앱 설정에서 재설정하세요.</string>
     <string name="send_to_player">플레이어로 보내기</string>
     <string name="open_with">다음으로 열기</string>
     <string name="local">로컬</string>
