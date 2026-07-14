@@ -37,6 +37,7 @@ import android.widget.Toast
 import androidx.annotation.AttrRes
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.ColorUtils
 import androidx.core.net.toUri
@@ -55,6 +56,7 @@ import com.google.android.material.color.DynamicColors
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -472,6 +474,67 @@ fun Context.openMediaWithChooser(url: String, mimeType: String? = null): Boolean
         Timber.e("No app found to open media $url: ${ex.message}")
         showToast(R.string.app_not_installed, length = Toast.LENGTH_LONG)
         false
+    }
+}
+
+/** The bundled placeholder clip's file name once copied into the cache for FileProvider. */
+private const val PLAYER_SETUP_CLIP_NAME = "player_setup_clip.mp4"
+
+/**
+ * Copy the bundled placeholder video clip to a cache file (once, reusing it on later calls) and
+ * return a content:// [Uri] for it through the app's FileProvider. External video players cannot
+ * read a raw resource directly, so the settings screen hands them this small real file to trigger
+ * Android's native "open with / set as default" flow.
+ */
+fun Context.playerSetupClipUri(): Uri {
+    val mediaDir = File(cacheDir, "media").apply { mkdirs() }
+    val clip = File(mediaDir, PLAYER_SETUP_CLIP_NAME)
+    if (!clip.exists() || clip.length() == 0L) {
+        resources.openRawResource(R.raw.player_setup_clip).use { input ->
+            clip.outputStream().use { output -> input.copyTo(output) }
+        }
+    }
+    return FileProvider.getUriForFile(this, "$packageName.fileprovider", clip)
+}
+
+/**
+ * Resolve the app currently set as the default handler for videos and return its human readable
+ * label, or null when no single default is set. When more than one player is installed and the user
+ * has not chosen one yet Android returns its own resolver activity (package "android"), which we
+ * treat as "not set" so the summary nudges the user to pick one. Package visibility for this query
+ * is granted by the video VIEW <queries> intent in the manifest.
+ */
+fun Context.currentDefaultVideoPlayerLabel(): CharSequence? {
+    val intent =
+        Intent(Intent.ACTION_VIEW).setDataAndType("content://$packageName/video".toUri(), "video/*")
+    val info =
+        packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) ?: return null
+    val resolvedPackage = info.activityInfo.packageName
+    // "android" is the system ResolverActivity/ChooserActivity stub shown when the choice is
+    // ambiguous, i.e. no default has been set yet
+    if (resolvedPackage == "android" || info.activityInfo.name.contains("ResolverActivity")) {
+        return null
+    }
+    return packageManager.getApplicationLabel(info.activityInfo.applicationInfo)
+}
+
+/**
+ * Open [uri] with a plain implicit ACTION_VIEW video intent, letting Android show its native player
+ * chooser with the "Just once / Always" remember-choice buttons. This is deliberately NOT wrapped in
+ * Intent.createChooser, which would suppress the "Always" option and defeat the point of letting the
+ * user set a default player. Shows a toast if no app can handle videos at all.
+ */
+fun Context.launchDefaultVideoPlayerPicker(uri: Uri) {
+    val intent =
+        Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "video/*")
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+    try {
+        startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        Timber.e("No app found to open a video: ${e.message}")
+        showToast(R.string.app_not_installed, length = Toast.LENGTH_LONG)
     }
 }
 
