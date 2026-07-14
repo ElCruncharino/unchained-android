@@ -401,6 +401,8 @@
     <string name="open_with">Abrir con</string>
     <string name="local">Local</string>
     <string name="missing_default_player">Establecer el reproductor multimedia por defecto en los ajustes</string>
+    <string name="default_player_not_installed">%1$s no está instalado. Elige otro reproductor multimedia en los ajustes.</string>
+    <string name="no_media_players_installed">No hay ningún reproductor multimedia compatible instalado. Instala uno o configura un paquete personalizado abajo.</string>
     <string name="ui_settings_summary">Elige cómo y si se muestran las cosas</string>
     <string name="download_details_button_choice">Elija qué botones deben mostrarse en la pantalla de detalles de la descarga</string>
     <string name="external_apps">Aplicaciones externas</string>

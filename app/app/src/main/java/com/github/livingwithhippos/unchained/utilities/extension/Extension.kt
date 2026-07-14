@@ -49,6 +49,7 @@ import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Comp
 import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Companion.THEME_DAY
 import com.github.livingwithhippos.unchained.settings.view.ThemeItem
 import com.github.livingwithhippos.unchained.utilities.EitherResult
+import com.github.livingwithhippos.unchained.utilities.MediaPlayer
 import com.github.livingwithhippos.unchained.utilities.PreferenceKeys
 import com.google.android.material.color.DynamicColors
 import com.google.zxing.BarcodeFormat
@@ -349,6 +350,31 @@ fun DownloadManager.downloadFileInStandardFolder(
  * @return true on leanback devices, false otherwise
  */
 fun Context.isTv(): Boolean = packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+
+/**
+ * Check if an app with [packageName] is currently installed on this device.
+ *
+ * @param packageName the package name to look for
+ * @return true if the package is installed, false otherwise
+ */
+fun Context.isPackageInstalled(packageName: String): Boolean =
+    try {
+        packageManager.getPackageInfo(packageName, 0)
+        true
+    } catch (e: PackageManager.NameNotFoundException) {
+        false
+    }
+
+/**
+ * Return the first installed package of [player], trying its known package names in priority order,
+ * or null if none of them is installed. Used both to filter the media player list shown in settings
+ * and to build the launch intent for the selected default player.
+ *
+ * @param player the media player to look for
+ * @return the installed package name, or null if the player is not installed
+ */
+fun Context.installedPlayerPackage(player: MediaPlayer): String? =
+    player.packages.firstOrNull { isPackageInstalled(it) }
 
 /**
  * Return the Uri from a downloaded file id returned by the download manager
