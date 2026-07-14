@@ -248,6 +248,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         if (installedPlayers.isEmpty()) {
             playerPreference.summary = getString(R.string.no_media_players_installed)
+        } else {
+            // equivalent to app:useSimpleSummaryProvider="true", set here instead of in xml since
+            // it needs the entries/entryValues just assigned above to resolve the current value
+            playerPreference.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
         }
     }
 

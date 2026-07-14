@@ -70,14 +70,17 @@
             app:allowDividerAbove="false"
             app:allowDividerBelow="false">
             <!--
-                entries and entryValues are populated at runtime in SettingsFragment from the
-                players actually installed on the device, see knownMediaPlayers in Constants.kt
+                entries, entryValues and the summary provider are set at runtime in
+                SettingsFragment from the players actually installed on the device, see
+                knownMediaPlayers in Constants.kt. useSimpleSummaryProvider is deliberately not
+                set here: it resolves against entries/entryValues, which do not exist yet at
+                inflation time, and setting it again later once they do crashes with
+                "Preference already has a SummaryProvider set".
             -->
             <DropDownPreference
                 android:defaultValue="vlc"
                 android:key="default_media_player"
-                android:title="@string/default_media_player"
-                app:useSimpleSummaryProvider="true" />
+                android:title="@string/default_media_player" />
 
             <Preference android:summary="@string/custom_media_player_summary" />
 
