@@ -14,6 +14,8 @@
         <item name="floatingActionButtonStyle">@style/Widget.Unchained.FloatingActionButton</item>
         <item name="checkboxStyle">@style/Widget.Unchained.CheckBox</item>
         <item name="materialSwitchStyle">@style/Widget.Unchained.Switch</item>
+        <item name="actionButtonStyle">@style/Widget.Unchained.ActionButton</item>
+        <item name="actionOverflowButtonStyle">@style/Widget.Unchained.ActionButton.Overflow</item>
     </style>
 
 
