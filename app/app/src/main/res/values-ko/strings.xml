@@ -398,6 +398,8 @@
     <string name="open_with">다음으로 열기</string>
     <string name="local">로컬</string>
     <string name="missing_default_player">설정에서 기본 미디어 플레이어를 지정하세요</string>
+    <string name="default_player_not_installed">%1$s이(가) 설치되어 있지 않습니다. 설정에서 다른 미디어 플레이어를 선택하세요.</string>
+    <string name="no_media_players_installed">지원되는 미디어 플레이어가 설치되어 있지 않습니다. 하나를 설치하거나 아래에서 사용자 지정 플레이어 패키지를 설정하세요.</string>
     <string name="ui_settings_summary">표시 방법 및 항목 선택</string>
     <string name="download_details_button_choice">다운로드 상세 정보 화면에 표시할 버튼 선택</string>
     <string name="external_apps">외부 애플리케이션</string>

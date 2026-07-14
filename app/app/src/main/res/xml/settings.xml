@@ -69,10 +69,12 @@
             android:title="@string/default_media_player"
             app:allowDividerAbove="false"
             app:allowDividerBelow="false">
+            <!--
+                entries and entryValues are populated at runtime in SettingsFragment from the
+                players actually installed on the device, see knownMediaPlayers in Constants.kt
+            -->
             <DropDownPreference
                 android:defaultValue="vlc"
-                android:entries="@array/default_media_player"
-                android:entryValues="@array/default_media_player_values"
                 android:key="default_media_player"
                 android:title="@string/default_media_player"
                 app:useSimpleSummaryProvider="true" />

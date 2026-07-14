@@ -139,6 +139,42 @@ object PreferenceKeys {
     }
 }
 
+/**
+ * A media player the app can hand a stream to. [id] is the value stored in the
+ * `default_media_player` preference (and read back by DownloadDetailsFragment), [labelRes] is the
+ * name shown in the settings list and [packages] are the app package name(s) to look for and
+ * launch, in priority order (some players ship under more than one package, e.g. MX Player
+ * pro/free).
+ */
+data class MediaPlayer(val id: String, val labelRes: Int, val packages: List<String>)
+
+/** Preference value meaning "let the user type the package name of the player manually". */
+const val CUSTOM_MEDIA_PLAYER_ID = "custom_player"
+
+/**
+ * Every media player the app knows how to launch directly. This is the single source of truth for
+ * both the settings screen, which offers only the players actually installed, and
+ * DownloadDetailsFragment, which builds the launch intent, so the id-to-package mapping is no
+ * longer duplicated between arrays.xml and a hardcoded `when`.
+ */
+val knownMediaPlayers: List<MediaPlayer> =
+    listOf(
+        MediaPlayer("vlc", R.string.player_vlc, listOf("org.videolan.vlc")),
+        MediaPlayer(
+            "mx_player",
+            R.string.player_mx,
+            listOf("com.mxtech.videoplayer.pro", "com.mxtech.videoplayer.ad"),
+        ),
+        MediaPlayer("mpv", R.string.player_mpv, listOf("is.xyz.mpv")),
+        MediaPlayer("player_just_video", R.string.player_just_video, listOf("com.brouken.player")),
+        MediaPlayer("play_it", R.string.play_it, listOf("com.playit.videoplayer")),
+        MediaPlayer(
+            "web_video_cast",
+            R.string.player_web_video_cast,
+            listOf("com.instantbits.cast.webvideo"),
+        ),
+    )
+
 /** Used to map file extension and their icon */
 val extensionIconMap: Map<String, Int> =
     mapOf(
