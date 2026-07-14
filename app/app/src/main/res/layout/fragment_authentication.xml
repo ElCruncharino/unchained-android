@@ -213,40 +213,9 @@
             android:nextFocusLeft="@id/tfPrivateCode"
             android:nextFocusUp="@id/tfPrivateCode"
             android:text="@string/save"
-            app:layout_constraintBottom_toTopOf="@id/tvTokenServerMessage"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tfPrivateCode" />
-
-        <!-- only shown on Android TV, where a temporary local server allows sending
-             the private token from another device -->
-        <TextView
-            android:id="@+id/tvTokenServerMessage"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="30dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginEnd="30dp"
-            android:gravity="center"
-            android:textAlignment="center"
-            android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@id/ivTokenServerQrCode"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/bInsertPrivate" />
-
-        <ImageView
-            android:id="@+id/ivTokenServerQrCode"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="10dp"
-            android:contentDescription="@string/login_qr_code_description"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvTokenServerMessage" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

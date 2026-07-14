@@ -164,41 +164,12 @@
             android:minWidth="170dp"
             android:minLines="2"
             android:text="@string/upload"
-            app:layout_constraintBottom_toTopOf="@+id/tvLinkServerMessage"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintHorizontal_weight="1"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tvUploadTorrent" />
-
-        <!-- only shown on Android TV: address, PIN and QR code of the local server used to send
-        the link or magnet from a phone instead of typing it with the remote -->
-        <TextView
-            android:id="@+id/tvLinkServerMessage"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="15dp"
-            android:textAlignment="center"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@+id/ivLinkServerQrCode"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/bUploadFile" />
-
-        <ImageView
-            android:id="@+id/ivLinkServerQrCode"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="10dp"
-            android:contentDescription="@string/link_qr_code_description"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tvLinkServerMessage" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.github.livingwithhippos.unchained.utilities.NonFocusableNestedScrollView>
