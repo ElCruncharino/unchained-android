@@ -54,7 +54,9 @@ import com.github.livingwithhippos.unchained.utilities.RD_STREAMING_URL
 import com.github.livingwithhippos.unchained.utilities.extension.copyToClipboard
 import com.github.livingwithhippos.unchained.utilities.extension.getAvailableSpace
 import com.github.livingwithhippos.unchained.utilities.extension.getFileSizeString
+import com.github.livingwithhippos.unchained.utilities.extension.isTv
 import com.github.livingwithhippos.unchained.utilities.extension.openExternalWebPage
+import com.github.livingwithhippos.unchained.utilities.extension.openMediaWithChooser
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -143,6 +145,9 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
             onDownloadClick(args.details.download, args.details.filename)
         }
         binding.fabSendToPlayer.setOnClickListener { onSendToPlayer(args.details.download) }
+        binding.fabOpenWith.setOnClickListener {
+            context?.openMediaWithChooser(args.details.download, args.details.mimeType)
+        }
         if (!args.details.alternative.isNullOrEmpty()) {
             binding.rvAlternativeList.visibility = View.VISIBLE
         } else {
@@ -182,6 +187,10 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
         }
 
         if (args.details.streamable == 1) {
+            if (viewModel.getButtonVisibilityPreference(SHOW_OPEN_WITH_BUTTON))
+                binding.llFabOpenWith.visibility = View.VISIBLE
+            else binding.llFabOpenWith.visibility = View.GONE
+
             if (viewModel.getButtonVisibilityPreference(SHOW_MEDIA_BUTTON))
                 binding.llFabSendToPlayer.visibility = View.VISIBLE
             else binding.llFabSendToPlayer.visibility = View.GONE
@@ -194,6 +203,7 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
                 binding.llFabLoadStreams.visibility = View.VISIBLE
             else binding.llFabLoadStreams.visibility = View.GONE
         } else {
+            binding.llFabOpenWith.visibility = View.GONE
             binding.llFabSendToPlayer.visibility = View.GONE
             binding.llFabPickStreaming.visibility = View.GONE
             binding.llFabLoadStreams.visibility = View.GONE
@@ -390,6 +400,13 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
                 R.id.browser_streaming -> {
                     onBrowserStreamsClick(args.details.id)
                 }
+
+                R.id.open_with_player -> {
+                    context?.openMediaWithChooser(
+                        url ?: args.details.download,
+                        if (url == null) args.details.mimeType else null,
+                    )
+                }
             }
             true
         }
@@ -506,6 +523,15 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
                 if (popup.isShowing) popup.dismiss()
             }
         }
+
+        val openWithLayout = popup.contentView.findViewById<ConstraintLayout>(R.id.openWithLayout)
+        openWithLayout.setOnClickListener {
+            context?.openMediaWithChooser(
+                url ?: args.details.download,
+                if (url == null) args.details.mimeType else null,
+            )
+            if (popup.isShowing) popup.dismiss()
+        }
     }
 
     private fun playOnService(
@@ -598,7 +624,13 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
     }
 
     override fun onOpenClick(url: String) {
-        context?.openExternalWebPage(url)
+        // opening a media url in a browser is useless on a TV, where there usually is none, so hand
+        // it to a player through the system chooser instead. Phones keep the browser behaviour.
+        if (context?.isTv() == true) {
+            context?.openMediaWithChooser(url)
+        } else {
+            context?.openExternalWebPage(url)
+        }
     }
 
     override fun onOpenTranscodedStream(view: View, url: String) {
@@ -685,6 +717,7 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
     companion object {
         const val SHOW_SHARE_BUTTON = "show_share_button"
         const val SHOW_OPEN_BUTTON = "show_open_button"
+        const val SHOW_OPEN_WITH_BUTTON = "show_open_with_button"
         const val SHOW_COPY_BUTTON = "show_copy_button"
         const val SHOW_DOWNLOAD_BUTTON = "show_download_button"
         const val SHOW_MEDIA_BUTTON = "show_media_button"

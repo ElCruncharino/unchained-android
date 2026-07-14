@@ -3,6 +3,7 @@ package com.github.livingwithhippos.unchained.utilities.extension
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DownloadManager
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipDescription.MIMETYPE_TEXT_HTML
 import android.content.ClipDescription.MIMETYPE_TEXT_PLAIN
@@ -30,6 +31,7 @@ import android.provider.OpenableColumns
 import android.util.TypedValue
 import android.view.View
 import android.view.WindowInsetsController
+import android.webkit.MimeTypeMap
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.annotation.AttrRes
@@ -413,6 +415,38 @@ fun Context.openExternalWebPage(url: String, showErrorToast: Boolean = true): Bo
     } else if (showErrorToast) showToast(R.string.invalid_url)
 
     return false
+}
+
+/**
+ * Hand a media url to any installed player through the system "open with" chooser instead of a
+ * hardcoded player package, so the user picks the player (VLC, mpv, Just Player, ...) themselves.
+ * The mime type is taken from [mimeType] when the caller knows it, otherwise guessed from the url
+ * extension, otherwise a generic video type, so direct http(s) links stream in the chosen player
+ * without being downloaded first.
+ *
+ * @param url the media url to open
+ * @param mimeType the known mime type of the media, or null to guess it from the url
+ * @return true if a chooser was shown, false if no app could handle the intent
+ */
+fun Context.openMediaWithChooser(url: String, mimeType: String? = null): Boolean {
+    val resolvedType =
+        mimeType?.takeIf { it.isNotBlank() }
+            ?: MimeTypeMap.getFileExtensionFromUrl(url)
+                .takeIf { it.isNotEmpty() }
+                ?.let {
+                    MimeTypeMap.getSingleton().getMimeTypeFromExtension(it.lowercase(Locale.ROOT))
+                }
+            ?: "video/*"
+    val mediaIntent =
+        Intent(Intent.ACTION_VIEW).apply { setDataAndTypeAndNormalize(url.toUri(), resolvedType) }
+    return try {
+        startActivity(Intent.createChooser(mediaIntent, getString(R.string.open_with)))
+        true
+    } catch (ex: ActivityNotFoundException) {
+        Timber.e("No app found to open media $url: ${ex.message}")
+        showToast(R.string.app_not_installed, length = Toast.LENGTH_LONG)
+        false
+    }
 }
 
 /**

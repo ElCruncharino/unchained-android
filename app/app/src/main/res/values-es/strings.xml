@@ -392,12 +392,15 @@
     <string name="show_media_player_button">Mostrar botón multimedia</string>
     <string name="default_media_player">Reproductor multimedia por defecto</string>
     <string name="send_to_player">Enviar al reproductor multimedia</string>
+    <string name="open_with">Abrir con</string>
+    <string name="local">Local</string>
     <string name="missing_default_player">Establecer el reproductor multimedia por defecto en los ajustes</string>
     <string name="ui_settings_summary">Elige cómo y si se muestran las cosas</string>
     <string name="download_details_button_choice">Elija qué botones deben mostrarse en la pantalla de detalles de la descarga</string>
     <string name="external_apps">Aplicaciones externas</string>
     <string name="show_share_button">Mostrar el botón de compartir</string>
     <string name="show_open_button">Mostrar botón de apertura</string>
+    <string name="show_open_with_button">Mostrar botón abrir con</string>
     <string name="show_copy_button">Mostrar botón de copia</string>
     <string name="show_download_button">Mostrar botón de descarga</string>
     <string name="show_load_stream_button">Mostrar el botón de carga de la transmisión</string>

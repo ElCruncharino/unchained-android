@@ -191,6 +191,11 @@
 
             <SwitchPreference
                 android:defaultValue="true"
+                app:key="show_open_with_button"
+                app:title="@string/show_open_with_button" />
+
+            <SwitchPreference
+                android:defaultValue="true"
                 app:key="show_media_button"
                 app:summary="@string/show_media_player_button_summary"
                 app:title="@string/show_media_player_button" />
