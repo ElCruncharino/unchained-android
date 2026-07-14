@@ -168,7 +168,13 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
             binding.llFabShare.visibility = View.GONE
         }
 
-        if (viewModel.getButtonVisibilityPreference(SHOW_OPEN_BUTTON)) {
+        // on tv the open button triggers the same chooser as the open with one for streamable
+        // files, so showing both would be duplicated
+        val openDuplicatesOpenWith =
+            requireContext().isTv() &&
+                args.details.streamable == 1 &&
+                viewModel.getButtonVisibilityPreference(SHOW_OPEN_WITH_BUTTON)
+        if (viewModel.getButtonVisibilityPreference(SHOW_OPEN_BUTTON) && !openDuplicatesOpenWith) {
             binding.llFabOpen.visibility = View.VISIBLE
         } else {
             binding.llFabOpen.visibility = View.GONE
@@ -364,6 +370,11 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
 
         if (servicesList.isEmpty()) {
             popup.menu.findItem(R.id.pick_service).isVisible = false
+        }
+
+        // tvs usually have no browser to stream with
+        if (requireContext().isTv()) {
+            popup.menu.findItem(R.id.browser_streaming).isVisible = false
         }
 
         if (url != null) {
