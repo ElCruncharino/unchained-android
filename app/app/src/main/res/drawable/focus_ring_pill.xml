@@ -7,6 +7,7 @@
     <item android:state_focused="true">
         <shape android:shape="rectangle">
             <corners android:radius="50dp" />
+            <solid android:color="@color/focus_fill" />
             <stroke android:width="@dimen/focus_stroke_width" android:color="?attr/colorPrimary" />
         </shape>
     </item>

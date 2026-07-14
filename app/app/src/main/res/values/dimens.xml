@@ -5,7 +5,7 @@
     <dimen name="stat_card_elevation">10dp</dimen>
     <dimen name="custom_color_swatch_size">44dp</dimen>
     <dimen name="custom_color_swatch_margin">12dp</dimen>
-    <dimen name="focus_stroke_width">2dp</dimen>
+    <dimen name="focus_stroke_width">3dp</dimen>
 
     <!-- Overrides the Material 3 focused state layer opacity token (default 0.1), which every
     Material widget's ripple color state list resolves its state_focused alpha through: buttons,
