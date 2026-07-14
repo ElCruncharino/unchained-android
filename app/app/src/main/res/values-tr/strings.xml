@@ -404,9 +404,6 @@
     <string name="send_to_player">Oynatıcıya gönder</string>
     <string name="open_with">Birlikte aç</string>
     <string name="local">Yerel</string>
-    <string name="missing_default_player">Ayarlarda varsayılan medya oynatıcısını ayarlayın</string>
-    <string name="default_player_not_installed">%1$s yüklü değil. Ayarlardan başka bir medya oynatıcı seçin.</string>
-    <string name="no_media_players_installed">Yüklü desteklenen bir medya oynatıcı yok. Bir tane yükleyin veya aşağıdan özel bir oynatıcı paketi ayarlayın.</string>
     <string name="ui_settings_summary">Nasıl ve neyin gösterileceğini seçin</string>
     <string name="download_details_button_choice">İndirme ayrıntıları ekranında hangi düğmelerin gösterileceğini seçin</string>
     <string name="external_apps">Harici uygulamalar</string>
@@ -419,9 +416,6 @@
     <string name="show_stream_browser_button">Tarayıcıda akış düğmesini göster</string>
     <string name="install_plugins">Eklentileri yükle</string>
     <string name="install_plugins_summary">Arama ekranı menüsündeki yönet deposu düğmesini kullanarak eklentileri yükleyin</string>
-    <string name="custom_media_player">Özel medya oynatıcı</string>
-    <string name="custom_media_player_summary">\"org.videolan.vlc\" gibi özel bir medya oynatıcı paketi kullanın. Bu, medya dosyalarının doğrudan paylaşımını destekleyebilir. Varsayılan medya oynatıcı tercihi olarak \"özel oynatıcı\" seçmeyi unutmayın</string>
-    <string name="invalid_package">Geçersiz paket</string>
     <string name="delete_all_downloads">Tüm indirmeleri sil</string>
     <string name="delete_all_torrents">Tüm torrentleri sil</string>
     <string name="fdroid_update_description">F-Droid\'de yeni bir uygulama sürümü bulundu</string>

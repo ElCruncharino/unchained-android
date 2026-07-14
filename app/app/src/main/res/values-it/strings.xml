@@ -408,9 +408,6 @@
     <string name="send_to_player">Invia a lettore</string>
     <string name="open_with">Apri con</string>
     <string name="local">Locale</string>
-    <string name="missing_default_player">Imposta il lettore di default nell impostazioni</string>
-    <string name="default_player_not_installed">%1$s non è installato. Scegli un altro lettore multimediale nelle impostazioni.</string>
-    <string name="no_media_players_installed">Nessun lettore multimediale compatibile installato. Installane uno o imposta un pacchetto personalizzato qui sotto.</string>
     <string name="ui_settings_summary">Scegli se e come sono mostrate le cose</string>
     <string name="download_details_button_choice">Scegli quali bottoni mostrare nella schermata di dettagli download</string>
     <string name="external_apps">Applicazioni esterne</string>
@@ -423,9 +420,6 @@
     <string name="show_stream_browser_button">Mostra bottone stream nel browser</string>
     <string name="install_plugins">Installare plugins</string>
     <string name="install_plugins_summary">Per installare i plugin, utilizzare il pulsante Gestisci repository nel menu della schermata di ricerca</string>
-    <string name="custom_media_player">Lettore media personalizzato</string>
-    <string name="custom_media_player_summary">Usa il package di un lettore media personalizzato come \"org.videolan.vlc\". Potrebbe supportare la condivisione diretta di media. Ricorda di impostare \"lettore media personalizzato\" come impostazione di lettore media predefinito</string>
-    <string name="invalid_package">Package non valido</string>
     <string name="delete_all_downloads">Elimina tutti i download</string>
     <string name="delete_all_torrents">Elimina tutti i torrent</string>
     <string name="fdroid_update_description">Una versione più recente della app è stata trovata su F-Droid</string>
