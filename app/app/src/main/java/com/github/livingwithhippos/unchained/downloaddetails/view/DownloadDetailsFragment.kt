@@ -2,8 +2,6 @@ package com.github.livingwithhippos.unchained.downloaddetails.view
 
 import android.annotation.SuppressLint
 import android.app.UiModeManager
-import android.content.ActivityNotFoundException
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -49,15 +47,13 @@ import com.github.livingwithhippos.unchained.downloaddetails.viewmodel.DownloadD
 import com.github.livingwithhippos.unchained.downloaddetails.viewmodel.DownloadDetailsViewModel
 import com.github.livingwithhippos.unchained.downloaddetails.viewmodel.DownloadEvent
 import com.github.livingwithhippos.unchained.lists.view.ListState
-import com.github.livingwithhippos.unchained.utilities.CUSTOM_MEDIA_PLAYER_ID
 import com.github.livingwithhippos.unchained.utilities.EventObserver
 import com.github.livingwithhippos.unchained.utilities.RD_STREAMING_URL
-import com.github.livingwithhippos.unchained.utilities.knownMediaPlayers
 import com.github.livingwithhippos.unchained.utilities.extension.copyToClipboard
 import com.github.livingwithhippos.unchained.utilities.extension.getAvailableSpace
 import com.github.livingwithhippos.unchained.utilities.extension.getFileSizeString
-import com.github.livingwithhippos.unchained.utilities.extension.installedPlayerPackage
 import com.github.livingwithhippos.unchained.utilities.extension.isTv
+import com.github.livingwithhippos.unchained.utilities.extension.launchDefaultVideoPlayerPicker
 import com.github.livingwithhippos.unchained.utilities.extension.openExternalWebPage
 import com.github.livingwithhippos.unchained.utilities.extension.openMediaWithChooser
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
@@ -608,30 +604,6 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
         return popup
     }
 
-    private fun tryStartExternalApp(intent: Intent) {
-        try {
-            startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            context?.showToast(R.string.app_not_installed)
-        }
-    }
-
-    private fun createMediaIntent(
-        appPackage: String,
-        url: String,
-        component: ComponentName? = null,
-        dataType: String = "video/*",
-    ): Intent {
-
-        val uri = url.toUri()
-        val intent = Intent(Intent.ACTION_VIEW)
-        intent.setPackage(appPackage)
-        intent.setDataAndTypeAndNormalize(uri, dataType)
-        if (component != null) intent.component = component
-
-        return intent
-    }
-
     override fun onCopyClick(text: String) {
         copyToClipboard("Real-Debrid Download Link", text)
         context?.showToast(R.string.link_copied)
@@ -675,45 +647,9 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
     }
 
     override fun onSendToPlayer(url: String) {
-        val context = context ?: return
-        val playerId = viewModel.getDefaultPlayer()
-
-        if (playerId.isNullOrBlank()) {
-            context.showToast(R.string.missing_default_player)
-            return
-        }
-
-        if (playerId == CUSTOM_MEDIA_PLAYER_ID) {
-            val customPlayerPackage = viewModel.getCustomPlayerPreference()
-            if (customPlayerPackage.isBlank()) {
-                context.showToast(R.string.invalid_package)
-            } else {
-                tryStartExternalApp(createMediaIntent(customPlayerPackage, url))
-            }
-            return
-        }
-
-        val player = knownMediaPlayers.firstOrNull { it.id == playerId }
-        if (player == null) {
-            // stored value is not a known player (e.g. left over from an older version), treat it
-            // like a missing default
-            context.showToast(R.string.missing_default_player)
-            return
-        }
-
-        val installedPackage = context.installedPlayerPackage(player)
-        if (installedPackage == null) {
-            // the chosen default player was never installed or has been uninstalled since. Reset
-            // the stale preference and tell the user which player is gone, instead of showing the
-            // same generic "app not installed" toast on every press forever.
-            viewModel.clearDefaultPlayer()
-            context.showToast(
-                getString(R.string.default_player_not_installed, getString(player.labelRes))
-            )
-            return
-        }
-
-        tryStartExternalApp(createMediaIntent(installedPackage, url))
+        // hand the url straight to Android's default video player (or its picker, if none is set
+        // yet), so the user's system wide choice is respected with no player list to maintain
+        context?.launchDefaultVideoPlayerPicker(url.toUri())
     }
 
     companion object {
