@@ -617,12 +617,15 @@
     <string name="show_media_player_button">Show media button</string>
     <string name="default_media_player">Default media player</string>
     <string name="send_to_player">Send to player</string>
+    <string name="open_with">Open with</string>
+    <string name="local">Local</string>
     <string name="missing_default_player">Set the default media player in settings</string>
     <string name="ui_settings_summary">Choose how and if things are shown</string>
     <string name="download_details_button_choice">Choose which buttons should be shown in the download details screen</string>
     <string name="external_apps">External applications</string>
     <string name="show_share_button">Show share button</string>
     <string name="show_open_button">Show open button</string>
+    <string name="show_open_with_button">Show open with button</string>
     <string name="show_copy_button">Show copy button</string>
     <string name="show_download_button">Show download button</string>
     <string name="show_load_stream_button">Show load stream button</string>
