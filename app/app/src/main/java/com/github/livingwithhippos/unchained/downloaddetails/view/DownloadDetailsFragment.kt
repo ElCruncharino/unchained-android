@@ -53,7 +53,7 @@ import com.github.livingwithhippos.unchained.utilities.extension.copyToClipboard
 import com.github.livingwithhippos.unchained.utilities.extension.getAvailableSpace
 import com.github.livingwithhippos.unchained.utilities.extension.getFileSizeString
 import com.github.livingwithhippos.unchained.utilities.extension.isTv
-import com.github.livingwithhippos.unchained.utilities.extension.launchDefaultVideoPlayerPicker
+import com.github.livingwithhippos.unchained.utilities.extension.playWithPreferredVideoPlayer
 import com.github.livingwithhippos.unchained.utilities.extension.openExternalWebPage
 import com.github.livingwithhippos.unchained.utilities.extension.openMediaWithChooser
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
@@ -647,9 +647,9 @@ class DownloadDetailsFragment : UnchainedFragment(), DownloadDetailsListener {
     }
 
     override fun onSendToPlayer(url: String) {
-        // hand the url straight to Android's default video player (or its picker, if none is set
-        // yet), so the user's system wide choice is respected with no player list to maintain
-        context?.launchDefaultVideoPlayerPicker(url.toUri())
+        // hand the url straight to the remembered preferred player (or its picker, if none is set
+        // yet), so the user's choice is respected with no player list to maintain
+        context?.playWithPreferredVideoPlayer(url.toUri())
     }
 
     companion object {

@@ -22,11 +22,11 @@ import com.github.livingwithhippos.unchained.settings.viewmodel.SettingEvent
 import com.github.livingwithhippos.unchained.settings.viewmodel.SettingsViewModel
 import com.github.livingwithhippos.unchained.utilities.FEEDBACK_URL
 import com.github.livingwithhippos.unchained.utilities.GPLV3_URL
-import com.github.livingwithhippos.unchained.utilities.extension.currentDefaultVideoPlayerLabel
 import com.github.livingwithhippos.unchained.utilities.extension.getThemeList
 import com.github.livingwithhippos.unchained.utilities.extension.isTv
-import com.github.livingwithhippos.unchained.utilities.extension.launchDefaultVideoPlayerPicker
+import com.github.livingwithhippos.unchained.utilities.extension.pickVideoPlayer
 import com.github.livingwithhippos.unchained.utilities.extension.playerSetupClipUri
+import com.github.livingwithhippos.unchained.utilities.extension.preferredVideoPlayerLabel
 import com.github.livingwithhippos.unchained.utilities.extension.openExternalWebPage
 import com.github.livingwithhippos.unchained.utilities.extension.showToast
 import dagger.hilt.android.AndroidEntryPoint
@@ -219,25 +219,29 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     /**
      * Wire up the single "default media player" row. Instead of maintaining a list of known
-     * players, clicking the row hands a small bundled clip to Android's native "open with" flow so
-     * the user can pick any installed player and, via the "Always" button, set it as the system
-     * default. The row summary shows whichever player is currently the default (or a "not set"
-     * hint), refreshed in onResume since Android gives no callback when the user makes that choice.
+     * players, clicking the row hands a small bundled clip to the system's "open with" chooser so
+     * the user can pick any installed player; the choice is remembered as this app's own preferred
+     * player (see [com.github.livingwithhippos.unchained.utilities.VideoPlayerChosenReceiver]),
+     * not through Android's own OS level "always" mechanism, which cannot be reliably undone by a
+     * third party app. The row always reopens the chooser when clicked, so changing the choice
+     * later works the same way as picking it the first time. The summary shows whichever player is
+     * currently remembered (or a "not set" hint), refreshed in onResume since there is no direct
+     * callback for when the user makes that choice.
      */
     private fun setupDefaultMediaPlayerPicker() {
         val playerPreference = findPreference<Preference>("default_media_player_picker") ?: return
         updateDefaultMediaPlayerSummary()
         playerPreference.setOnPreferenceClickListener {
             val context = requireContext()
-            context.launchDefaultVideoPlayerPicker(context.playerSetupClipUri())
+            context.pickVideoPlayer(context.playerSetupClipUri())
             true
         }
     }
 
-    /** Set the media player row summary to the current default player label, or a "not set" hint. */
+    /** Set the media player row summary to the current preferred player label, or a "not set" hint. */
     private fun updateDefaultMediaPlayerSummary() {
         val playerPreference = findPreference<Preference>("default_media_player_picker") ?: return
-        val currentPlayer = requireContext().currentDefaultVideoPlayerLabel()
+        val currentPlayer = requireContext().preferredVideoPlayerLabel()
         playerPreference.summary =
             if (currentPlayer.isNullOrBlank()) {
                 getString(R.string.default_media_player_not_set)

@@ -3,6 +3,7 @@ package com.github.livingwithhippos.unchained.utilities.extension
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DownloadManager
+import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipDescription.MIMETYPE_TEXT_HTML
@@ -50,7 +51,9 @@ import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Comp
 import com.github.livingwithhippos.unchained.settings.view.SettingsFragment.Companion.THEME_DAY
 import com.github.livingwithhippos.unchained.settings.view.ThemeItem
 import com.github.livingwithhippos.unchained.utilities.EitherResult
+import com.github.livingwithhippos.unchained.utilities.KEY_PREFERRED_VIDEO_PLAYER
 import com.github.livingwithhippos.unchained.utilities.PreferenceKeys
+import com.github.livingwithhippos.unchained.utilities.VideoPlayerChosenReceiver
 import com.google.android.material.color.DynamicColors
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -455,15 +458,18 @@ fun Context.openMediaWithChooser(url: String, mimeType: String? = null): Boolean
 private const val PLAYER_SETUP_CLIP_NAME = "player_setup_clip.mp4"
 
 /**
- * Copy the bundled placeholder video clip to a cache file (once, reusing it on later calls) and
- * return a content:// [Uri] for it through the app's FileProvider. External video players cannot
- * read a raw resource directly, so the settings screen hands them this small real file to trigger
- * Android's native "open with / set as default" flow.
+ * Copy the bundled placeholder video clip to a cache file, reusing it across calls as long as it
+ * still matches the resource bundled in this build, and return a content:// [Uri] for it through
+ * the app's FileProvider. External video players cannot read a raw resource directly, so the
+ * settings screen hands them this small real file to trigger Android's native "open with / set as
+ * default" flow. The size check re-copies the clip after an app update changes it; comparing
+ * length only (not a full hash) is enough since this is a small bundled asset, not user content.
  */
 fun Context.playerSetupClipUri(): Uri {
     val mediaDir = File(cacheDir, "media").apply { mkdirs() }
     val clip = File(mediaDir, PLAYER_SETUP_CLIP_NAME)
-    if (!clip.exists() || clip.length() == 0L) {
+    val bundledSize = resources.openRawResourceFd(R.raw.player_setup_clip).use { it.length }
+    if (!clip.exists() || clip.length() != bundledSize) {
         resources.openRawResource(R.raw.player_setup_clip).use { input ->
             clip.outputStream().use { output -> input.copyTo(output) }
         }
@@ -472,43 +478,88 @@ fun Context.playerSetupClipUri(): Uri {
 }
 
 /**
- * Resolve the app currently set as the default handler for videos and return its human readable
- * label, or null when no single default is set. When more than one player is installed and the user
- * has not chosen one yet Android returns its own resolver activity (package "android"), which we
- * treat as "not set" so the summary nudges the user to pick one. Package visibility for this query
- * is granted by the video VIEW <queries> intent in the manifest.
+ * Human readable label of the remembered preferred video player, or null when none is set yet, or
+ * the remembered player is no longer installed (in which case the stale preference is cleared).
  */
-fun Context.currentDefaultVideoPlayerLabel(): CharSequence? {
-    val intent =
-        Intent(Intent.ACTION_VIEW).setDataAndType("content://$packageName/video".toUri(), "video/*")
-    val info =
-        packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) ?: return null
-    val resolvedPackage = info.activityInfo.packageName
-    // "android" is the system ResolverActivity/ChooserActivity stub shown when the choice is
-    // ambiguous, i.e. no default has been set yet
-    if (resolvedPackage == "android" || info.activityInfo.name.contains("ResolverActivity")) {
-        return null
+fun Context.preferredVideoPlayerLabel(): CharSequence? {
+    val pkg =
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .getString(KEY_PREFERRED_VIDEO_PLAYER, null) ?: return null
+    return try {
+        packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0))
+    } catch (e: PackageManager.NameNotFoundException) {
+        clearPreferredVideoPlayer()
+        null
     }
-    return packageManager.getApplicationLabel(info.activityInfo.applicationInfo)
+}
+
+/** Forget the remembered preferred video player. Always works: it is only our own preference. */
+fun Context.clearPreferredVideoPlayer() {
+    PreferenceManager.getDefaultSharedPreferences(this)
+        .edit()
+        .remove(KEY_PREFERRED_VIDEO_PLAYER)
+        .apply()
 }
 
 /**
- * Open [uri] with a plain implicit ACTION_VIEW video intent, letting Android show its native player
- * chooser with the "Just once / Always" remember-choice buttons. This is deliberately NOT wrapped in
- * Intent.createChooser, which would suppress the "Always" option and defeat the point of letting the
- * user set a default player. Shows a toast if no app can handle videos at all.
+ * Show the system's app chooser for [uri] so the user can pick a video player, remembering the
+ * choice as the new preferred player via [VideoPlayerChosenReceiver]. Always shows the chooser
+ * regardless of any previously remembered choice; call [playWithPreferredVideoPlayer] instead to
+ * go straight to the remembered player when there is one. Shows a toast if no app can handle videos
+ * at all.
  */
-fun Context.launchDefaultVideoPlayerPicker(uri: Uri) {
+fun Context.pickVideoPlayer(uri: Uri) {
+    val viewIntent =
+        Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "video/*")
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+    val callbackFlags =
+        if (SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+    val callback =
+        PendingIntent.getBroadcast(
+            this,
+            0,
+            Intent(this, VideoPlayerChosenReceiver::class.java),
+            callbackFlags,
+        )
+    val chooser = Intent.createChooser(viewIntent, getString(R.string.open_with), callback.intentSender)
+    try {
+        startActivity(chooser)
+    } catch (e: ActivityNotFoundException) {
+        Timber.e("No app found to open a video: ${e.message}")
+        showToast(R.string.app_not_installed, length = Toast.LENGTH_LONG)
+    }
+}
+
+/**
+ * Play [uri] with the remembered preferred video player when one is set and still installed,
+ * otherwise show the chooser so the user can pick one (and remember it for next time).
+ */
+fun Context.playWithPreferredVideoPlayer(uri: Uri) {
+    val pkg =
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .getString(KEY_PREFERRED_VIDEO_PLAYER, null)
+    if (pkg == null) {
+        pickVideoPlayer(uri)
+        return
+    }
     val intent =
         Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "video/*")
+            setPackage(pkg)
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
         }
     try {
         startActivity(intent)
     } catch (e: ActivityNotFoundException) {
-        Timber.e("No app found to open a video: ${e.message}")
-        showToast(R.string.app_not_installed, length = Toast.LENGTH_LONG)
+        // the remembered player can no longer handle this, forget it and let the user pick again
+        clearPreferredVideoPlayer()
+        pickVideoPlayer(uri)
     }
 }
 
