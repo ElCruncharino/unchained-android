@@ -615,6 +615,7 @@
     <string name="save_device">Save Device</string>
     <string name="update_device">Update Device</string>
     <string name="kodi_missing_default">The default Kodi device is not set</string>
+    <string name="add_subtitle_to_kodi">Add subtitle to Kodi</string>
     <string name="device_deleted">Device deleted</string>
     <string name="ui_settings">UI Settings</string>
     <string name="player_vlc" translatable="false">VLC</string>
@@ -672,6 +673,7 @@
     <string name="previous">Previous</string>
     <string name="ready">Ready</string>
     <string name="select_files">Select files</string>
+    <string name="filter_files_hint">Filter names, * supported</string>
     <string name="total_files">Total files</string>
     <string name="total_size">Total size</string>
     <string name="loading_torrent_info">Loading torrent files. Use the download all button on the bottom if you want to download all the content.</string>
