@@ -400,7 +400,7 @@
     <string name="show_media_player_button">Medya düğmesini göster</string>
     <string name="default_media_player">Varsayılan medya oynatıcı</string>
     <string name="default_media_player_not_set">Ayarlanmadı. Bir videoyu ilk açtığınızda hangi uygulamanın kullanılacağı sorulacak.</string>
-    <string name="default_media_player_current">%1$s. Değiştirmek için bir dahaki sefere \"Yalnızca bir kez\" seçin veya Android\'in uygulama ayarlarından sıfırlayın.</string>
+    <string name="default_media_player_current">%1$s. Değiştirmek için tekrar dokunun.</string>
     <string name="send_to_player">Oynatıcıya gönder</string>
     <string name="open_with">Birlikte aç</string>
     <string name="local">Yerel</string>

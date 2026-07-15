@@ -398,7 +398,7 @@
     <string name="show_media_player_button">Mostrar botón multimedia</string>
     <string name="default_media_player">Reproductor multimedia por defecto</string>
     <string name="default_media_player_not_set">Sin definir. Se te preguntará qué aplicación usar la primera vez que abras un vídeo.</string>
-    <string name="default_media_player_current">%1$s. Para cambiarlo, elige \"Solo una vez\" la próxima vez, o restablécelo desde los ajustes de aplicaciones de Android.</string>
+    <string name="default_media_player_current">%1$s. Toca de nuevo para cambiarlo.</string>
     <string name="send_to_player">Enviar al reproductor multimedia</string>
     <string name="open_with">Abrir con</string>
     <string name="local">Local</string>

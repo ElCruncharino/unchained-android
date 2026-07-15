@@ -622,7 +622,7 @@
     <string name="show_media_player_button">Show media button</string>
     <string name="default_media_player">Default media player</string>
     <string name="default_media_player_not_set">Not set. You will be asked which app to use the first time you open a video.</string>
-    <string name="default_media_player_current">%1$s. To change it, pick \"Just once\" next time, or reset it from Android\'s app settings.</string>
+    <string name="default_media_player_current">%1$s. Tap again to change it.</string>
     <string name="send_to_player">Send to player</string>
     <string name="open_with">Open with</string>
     <string name="local">Local</string>
