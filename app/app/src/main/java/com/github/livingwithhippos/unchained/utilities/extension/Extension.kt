@@ -537,6 +537,26 @@ fun Context.pickVideoPlayer(uri: Uri) {
 }
 
 /**
+ * VLC's own StartActivity (read directly from its public source to confirm this) launches its
+ * player two different ways depending on what it is handed. A plain ACTION_VIEW, which is the
+ * normal way to open a video, goes through startPlaybackFromApp(), which calls
+ * startActivityForResult(..., Util.getFullScreenBundle()) to launch VideoPlayerActivity eagerly
+ * with a custom ActivityOptions bundle; on some TVs (seen on a Google TV Streamer) that eager,
+ * options-driven launch loses a race against the TV's own window transition system and the video
+ * surface never gets created. A shared plain text link (exactly what this app's own Share button
+ * already sends) takes a completely different, lazier branch instead: it is handed to
+ * MediaUtils.openMediaNoUi(), which just queues it with VLC's existing playback service instead of
+ * launching the player activity itself, sidestepping that race entirely.
+ *
+ * A remembered link (a plain http/https url, not a local file) can safely be sent VLC's way,
+ * matching how sharing already works reliably. This cannot help the local placeholder clip used to
+ * pick a player in settings, since that is a content:// uri and sharing plain text does not carry
+ * the read permission grant a local file needs, so picking VLC there can still flash briefly; only
+ * real downloads benefit.
+ */
+private const val VLC_PACKAGE = "org.videolan.vlc"
+
+/**
  * Play [uri] with the remembered preferred video player when one is set and still installed,
  * otherwise show the chooser so the user can pick one (and remember it for next time).
  */
@@ -549,10 +569,22 @@ fun Context.playWithPreferredVideoPlayer(uri: Uri) {
         return
     }
     val intent =
-        Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "video/*")
-            setPackage(pkg)
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        if (pkg == VLC_PACKAGE) {
+            Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, uri.toString())
+                // set explicitly rather than relying on Android to synthesize it from
+                // EXTRA_TEXT: this is what the share button already sends, and what VLC's own
+                // code (read directly from its source) actually branches on
+                clipData = ClipData.newPlainText(null, uri.toString())
+                setPackage(VLC_PACKAGE)
+            }
+        } else {
+            Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "video/*")
+                setPackage(pkg)
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
         }
     try {
         startActivity(intent)
